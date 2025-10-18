@@ -1,6 +1,7 @@
 # Exhibition Rating System - Complete Setup Instructions
 
 ## 📋 Prerequisites
+
 - Node.js (v14 or higher) installed
 - npm or yarn package manager
 - A code editor (VS Code recommended)
@@ -37,14 +38,12 @@ Replace content in `tailwind.config.js`:
 ```javascript
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {},
   },
   plugins: [],
-}
+};
 ```
 
 ### Step 5: Update CSS
@@ -102,8 +101,6 @@ CREATE TABLE models (
     description_ur TEXT,
     description_kn TEXT,
     location TEXT,
-    volunteer_id UUID,
-    qr_code_url TEXT,
     image_url TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
@@ -125,35 +122,35 @@ CREATE TABLE volunteers (
 -- Create Ratings Table
 CREATE TABLE ratings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    model_id UUID REFERENCES models(id) ON DELETE CASCADE,
-    device_fingerprint TEXT NOT NULL,
-    rater_type TEXT CHECK (rater_type IN ('visitor', 'evaluator')),
-    
-    -- Rating Categories (1-5 stars each)
-    design_craftsmanship INTEGER CHECK (design_craftsmanship BETWEEN 1 AND 5),
-    historical_accuracy INTEGER CHECK (historical_accuracy BETWEEN 1 AND 5),
-    volunteer_explanation INTEGER CHECK (volunteer_explanation BETWEEN 1 AND 5),
-    educational_value INTEGER CHECK (educational_value BETWEEN 1 AND 5),
+    user_id  TEXT NOT NULL,
+    model_number INTEGER NOT NULL,
+    design_rating INTEGER CHECK (design_rating BETWEEN 1 AND 5),
+    explanation_rating INTEGER CHECK (explanation_rating BETWEEN 1 AND 5),
     overall_experience INTEGER CHECK (overall_experience BETWEEN 1 AND 5),
-    
-    -- Optional feedback
-    comments TEXT,
-    language_used TEXT CHECK (language_used IN ('en', 'ur', 'kn')),
-    
-    -- Metadata
+    language_prefered  TEXT CHECK (language_prefered IN ('en', 'ur', 'kn')),
     rating_date DATE DEFAULT CURRENT_DATE,
-    rating_time TIMESTAMP DEFAULT NOW(),
     created_at TIMESTAMP DEFAULT NOW()
 );
-
 -- Create indexes for performance
-CREATE INDEX idx_ratings_model ON ratings(model_id);
-CREATE INDEX idx_ratings_fingerprint ON ratings(device_fingerprint);
+CREATE INDEX idx_ratings_model ON ratings(model_number);
+CREATE INDEX idx_ratings_userid ON ratings(user_id);
 CREATE INDEX idx_ratings_date ON ratings(rating_date);
 
+
 -- Prevent duplicate ratings from same device for same model
-CREATE UNIQUE INDEX idx_ratings_unique_device_model 
-    ON ratings(device_fingerprint, model_id);
+CREATE UNIQUE INDEX idx_user_model_date_rating
+    ON ratings(user_id, model_number, rating_date);
+
+-- Create Labels Table
+CREATE TABLE labels (
+    id INTEGER PRIMARY KEY NOT NULL,
+    label_name  TEXT NOT NULL,
+    en_value TEXT NOT NULL,
+    ur_value TEXT,
+    kn_value TEXT,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 
 -- Exhibition Feedback Table
 CREATE TABLE exhibition_feedback (
@@ -175,7 +172,7 @@ Continue in SQL Editor, create new query:
 ```sql
 -- Model Rankings View
 CREATE OR REPLACE VIEW model_rankings AS
-SELECT 
+SELECT
     m.id,
     m.model_number,
     m.name_en,
@@ -187,13 +184,13 @@ SELECT
     ROUND(AVG(r.educational_value)::numeric, 2) as avg_education,
     ROUND(AVG(r.overall_experience)::numeric, 2) as avg_overall,
     ROUND(AVG(
-        (r.design_craftsmanship + r.historical_accuracy + 
-         r.volunteer_explanation + r.educational_value + 
+        (r.design_craftsmanship + r.historical_accuracy +
+         r.volunteer_explanation + r.educational_value +
          r.overall_experience) / 5.0
     )::numeric, 2) as composite_score,
     RANK() OVER (ORDER BY AVG(
-        (r.design_craftsmanship + r.historical_accuracy + 
-         r.volunteer_explanation + r.educational_value + 
+        (r.design_craftsmanship + r.historical_accuracy +
+         r.volunteer_explanation + r.educational_value +
          r.overall_experience) / 5.0
     ) DESC) as rank
 FROM models m
@@ -203,7 +200,7 @@ ORDER BY composite_score DESC NULLS LAST;
 
 -- Volunteer Performance View
 CREATE OR REPLACE VIEW volunteer_performance AS
-SELECT 
+SELECT
     v.id,
     v.name,
     v.volunteer_code,
@@ -219,14 +216,14 @@ ORDER BY avg_explanation_score DESC NULLS LAST;
 
 -- Daily Summary View
 CREATE OR REPLACE VIEW daily_summary AS
-SELECT 
+SELECT
     rating_date,
     COUNT(*) as total_ratings,
     COUNT(DISTINCT model_id) as unique_models_rated,
     COUNT(DISTINCT device_fingerprint) as unique_visitors,
     ROUND(AVG(
-        (design_craftsmanship + historical_accuracy + 
-         volunteer_explanation + educational_value + 
+        (design_craftsmanship + historical_accuracy +
+         volunteer_explanation + educational_value +
          overall_experience) / 5.0
     )::numeric, 2) as avg_score,
     COUNT(CASE WHEN rater_type = 'visitor' THEN 1 END) as visitor_ratings,
@@ -300,7 +297,7 @@ Replace with your actual values from Supabase.
 Create a new file `src/supabaseClient.js`:
 
 ```javascript
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -313,7 +310,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 At the very top of `src/App.js`, replace the mock Supabase section with:
 
 ```javascript
-import { supabase } from './supabaseClient';
+import { supabase } from "./supabaseClient";
 
 // Remove the entire createMockSupabase function and const supabase = createMockSupabase();
 ```
@@ -385,33 +382,33 @@ INSERT INTO volunteers (name, volunteer_code, assigned_models) VALUES
 Create `generate-qr.js` in project root:
 
 ```javascript
-const QRCode = require('qrcode');
-const fs = require('fs');
+const QRCode = require("qrcode");
+const fs = require("fs");
 
-const baseURL = 'https://your-app-url.vercel.app'; // Update after deployment
+const baseURL = "https://your-app-url.vercel.app"; // Update after deployment
 
 async function generateQRCodes() {
-  if (!fs.existsSync('./qr-codes')) {
-    fs.mkdirSync('./qr-codes');
+  if (!fs.existsSync("./qr-codes")) {
+    fs.mkdirSync("./qr-codes");
   }
 
   for (let i = 1; i <= 100; i++) {
     const url = `${baseURL}/#rate?model=${i}`;
-    const filename = `./qr-codes/Model_${String(i).padStart(3, '0')}_QR.png`;
-    
+    const filename = `./qr-codes/Model_${String(i).padStart(3, "0")}_QR.png`;
+
     await QRCode.toFile(filename, url, {
       width: 400,
       margin: 2,
       color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
+        dark: "#000000",
+        light: "#FFFFFF",
+      },
     });
-    
+
     console.log(`Generated: ${filename}`);
   }
-  
-  console.log('All QR codes generated successfully!');
+
+  console.log("All QR codes generated successfully!");
 }
 
 generateQRCodes();
@@ -449,6 +446,7 @@ vercel --prod
 ```
 
 Follow the prompts:
+
 - Set up and deploy? **Y**
 - Which scope? Choose your account
 - Link to existing project? **N**
@@ -511,11 +509,13 @@ Your app is now live! 🎉
 
 ### Issue: Styling not working
 
-**Solution:** 
+**Solution:**
+
 ```bash
 npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 ```
+
 Add Tailwind directives to `src/index.css`
 
 ### Issue: QR code leads to 404
@@ -554,7 +554,7 @@ Your setup is complete when:
 ✅ Can rate a model and see it on dashboard  
 ✅ Dashboard updates in real-time  
 ✅ QR codes scan and open rating form  
-✅ App deployed and accessible online  
+✅ App deployed and accessible online
 
 ---
 
@@ -572,11 +572,11 @@ In Supabase SQL Editor:
 
 ```sql
 -- Overall Exhibition Stats
-SELECT 
+SELECT
   COUNT(DISTINCT device_fingerprint) as total_visitors,
   COUNT(*) as total_ratings,
-  ROUND(AVG((design_craftsmanship + historical_accuracy + 
-             volunteer_explanation + educational_value + 
+  ROUND(AVG((design_craftsmanship + historical_accuracy +
+             volunteer_explanation + educational_value +
              overall_experience) / 5.0)::numeric, 2) as overall_avg
 FROM ratings;
 
@@ -597,5 +597,5 @@ May Allah accept this effort and make it a source of knowledge and inspiration f
 
 ---
 
-*Last Updated: October 2025*  
-*Version: 1.0*
+_Last Updated: October 2025_  
+_Version: 1.0_
