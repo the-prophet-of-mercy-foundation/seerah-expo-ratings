@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import AdminPanel from './components/AdminPanel';
 import Dashboard from './components/Dashboard';
-import RatingForm from './components/RatingForm';
+import RatingForm from './components/rating/RatingForm';
 import UserRegister from './components/UserRegister';
 import ModelsView from './components/ModelsView';
 import { Star, TrendingUp, Menu } from 'lucide-react';
 import { visitTrack } from './lib/visitTrack';
 import { getModels } from './lib/modelsApi';
+import { generateUserID } from './lib/supabaseClient';
 
 // Main App Component with Router
 const App = () => {
@@ -16,6 +17,7 @@ const App = () => {
   useEffect(() => {
     visitTrack();
     getModels();
+    generateUserID();
 
     localStorage.setItem('latestVisit', new Date().toISOString());
     const handleLocationChange = () => {
