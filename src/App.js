@@ -40,7 +40,7 @@ const App = () => {
         return;
       }
 
-      if (pathname === '/regsiter') {
+      if (pathname === '/register') {
         setCurrentView('register');
         return;
       }
@@ -180,7 +180,7 @@ const App = () => {
               <div className="text-sm text-gray-600">Languages</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600">20K</div>
+              <div className="text-3xl font-bold text-orange-600">10K</div>
               <div className="text-sm text-gray-600">Visitors</div>
             </div>
           </div>

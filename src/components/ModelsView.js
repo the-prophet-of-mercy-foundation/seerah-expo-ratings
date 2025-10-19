@@ -27,7 +27,25 @@ const ModelsView = () => {
     load();
   }, []);
 
+  const handleToggleVisited = (modelId) => {
+    console.log('Before toggle', exhibitData);
+    const modelVisited = exhibitData.find(
+      (model) => model.model_number === modelId,
+    );
+    modelVisited.visited = !modelVisited.visited;
+
+    setExhibitData((prevData) => {
+      prevData.map((model) =>
+        model.model_number === modelId
+          ? { ...model, visited: !model.visited }
+          : model,
+      );
+    });
+    console.log('After toggle', exhibitData);
+  };
+
   const locationStats = useMemo(() => {
+    console.log('Exhibit Data: called');
     const stats = {};
 
     exhibitData?.forEach((model) => {
@@ -88,15 +106,6 @@ const ModelsView = () => {
           >
             <h2 className="text-2xl font-bold text-gray-800 mb-3 flex justify-between items-center">
               <span>{location}</span>
-              <span
-                className={`text-sm font-medium px-3 py-1 rounded-full ${
-                  isComplete
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-indigo-100 text-indigo-700'
-                }`}
-              >
-                {isComplete ? 'Complete' : 'In Progress'}
-              </span>
             </h2>
 
             <div className="space-y-2 text-sm text-gray-600">
@@ -165,12 +174,12 @@ const ModelsView = () => {
                   isVisited ? 'border-green-400' : 'border-gray-200'
                 }`}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800">
+                <div className="flex justify-between items-start mb-7">
+                  <div className="text-center">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-3">
                       {model.id}
                     </h3>
-                    <p className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                    <p className="text-sm font-mono text-black-500 bg-blue-100 px-2 py-0.5 rounded-full">
                       {model.name}
                     </p>
                   </div>
@@ -178,7 +187,7 @@ const ModelsView = () => {
 
                 <div className="flex justify-between items-center space-x-2">
                   <button
-                    // onClick={() => handleToggleVisited(model.id)}
+                    onClick={() => handleToggleVisited(model.id)}
                     className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm ${
                       isVisited
                         ? 'bg-green-500 text-white hover:bg-green-600'
