@@ -33,16 +33,18 @@ const ModelsView = () => {
         if (data.length === 0) {
           data = await getModels();
           if (data && Array.isArray(data)) {
-            // Initialize visited property if not present
-            const dataWithVisited = data.map((item) => ({
+            // Initialize visited, user_rating, and rating_submitted properties
+            const dataWithDefaults = data.map((item) => ({
               ...item,
               visited: item.visited || 0,
+              user_rating: item.user_rating || 0,
+              rating_submitted: item.rating_submitted || false,
             }));
             localStorage.setItem(
               'modelsCache',
-              JSON.stringify(dataWithVisited),
+              JSON.stringify(dataWithDefaults),
             );
-            data = dataWithVisited;
+            data = dataWithDefaults;
           }
         }
 
@@ -79,6 +81,8 @@ const ModelsView = () => {
         name: model.name_en,
         desc: model.description_en,
         visited: model.visited || 0,
+        user_rating: model.user_rating || 0,
+        rating_submitted: model.rating_submitted || false,
       });
 
       groups[location].totalModels++;
@@ -114,6 +118,54 @@ const ModelsView = () => {
 
       return updatedData;
     });
+  };
+
+  // Handle rating submission
+  const handleSubmitRating = async (modelId, rating) => {
+    try {
+      // Get user_id from localStorage
+      const user_id = localStorage.getItem('user_id');
+
+      if (!user_id) {
+        alert('User not found. Please log in again.');
+        return;
+      }
+
+      // Create rating object
+      const ratingData = {
+        user_id: user_id,
+        model_number: modelId,
+        star_rating: rating,
+      };
+
+      // Call submitRating API (you'll need to import this function)
+      const response = await submitRating(ratingData);
+
+      if (response && Array.isArray(response) && response.length > 0) {
+        // Update exhibitData with rating submission status
+        setExhibitData((prevData) => {
+          const updatedData = prevData.map((model) =>
+            model.model_number === modelId
+              ? {
+                  ...model,
+                  user_rating: rating,
+                  rating_submitted: true,
+                }
+              : model,
+          );
+
+          // Update localStorage
+          localStorage.setItem('modelsCache', JSON.stringify(updatedData));
+
+          return updatedData;
+        });
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      alert('Failed to submit rating. Please try again.');
+    }
   };
 
   // Handle group click with mobile-friendly touch feedback
@@ -236,8 +288,8 @@ const ModelsView = () => {
           <button
             onClick={handleBackToGroups}
             className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium 
-                      transition-colors active:scale-95 w-fit px-3 py-2 rounded-lg
-                      active:bg-indigo-50 touch-manipulation"
+                    transition-colors active:scale-95 w-fit px-3 py-2 rounded-lg
+                    active:bg-indigo-50 touch-manipulation"
           >
             <svg
               className="w-5 h-5 mr-2"
@@ -270,6 +322,7 @@ const ModelsView = () => {
               model={model}
               groupName={selectedGroup}
               onVisitToggle={handleVisitToggle}
+              onSubmitRating={handleSubmitRating}
             />
           ))}
         </div>
@@ -277,23 +330,48 @@ const ModelsView = () => {
     );
   };
 
-  // Sub Model Card Component - Mobile Optimized
-  const SubModelCard = ({ model, groupName, onVisitToggle }) => {
+  // Sub Model Card Component - Enhanced with Star Rating
+  const SubModelCard = ({
+    model,
+    groupName,
+    onVisitToggle,
+    onSubmitRating,
+  }) => {
     const isVisited = model.visited === 1;
     const [isTapping, setIsTapping] = useState(false);
+    const [currentRating, setCurrentRating] = useState(model.user_rating || 0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleTapStart = () => setIsTapping(true);
     const handleTapEnd = () => setIsTapping(false);
 
+    const handleRate = (rating) => {
+      setCurrentRating(rating);
+    };
+
+    const handleSubmit = async () => {
+      if (currentRating === 0) {
+        alert('Please select a rating before submitting.');
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        await onSubmitRating(model.id, currentRating);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
     return (
       <div
         className={`bg-white p-4 md:p-6 rounded-xl shadow-lg border-2 transition-all duration-300 
-                   ${
-                     isVisited
-                       ? 'border-green-400 bg-green-50'
-                       : 'border-gray-200'
-                   }
-                   ${isTapping ? 'scale-95' : 'hover:shadow-xl'}`}
+                 ${
+                   isVisited
+                     ? 'border-green-400 bg-green-50'
+                     : 'border-gray-200'
+                 }
+                 ${isTapping ? 'scale-95' : 'hover:shadow-xl'}`}
         onTouchStart={handleTapStart}
         onTouchEnd={handleTapEnd}
         onMouseDown={handleTapStart}
@@ -312,37 +390,77 @@ const ModelsView = () => {
           {model.name}
         </h3>
 
-        {/* Visit Button - Full width on mobile */}
-        <button
-          onClick={() => onVisitToggle(model.id, groupName)}
-          disabled={isVisited}
-          className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 
+        {/* Conditional Rendering based on visited status */}
+        {!isVisited ? (
+          /* Not Visited - Show Visit Button */
+          <button
+            onClick={() => onVisitToggle(model.id, groupName)}
+            disabled={isVisited}
+            className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 
                      active:scale-95 touch-manipulation
-                     ${
-                       isVisited
-                         ? 'bg-green-500 text-white cursor-not-allowed'
-                         : 'bg-indigo-600 text-white active:bg-indigo-700 hover:bg-indigo-700'
-                     }`}
-        >
-          {isVisited ? (
-            <span className="flex items-center justify-center">
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
+                     bg-indigo-600 text-white active:bg-indigo-700 hover:bg-indigo-700`}
+          >
+            Mark as Visited
+          </button>
+        ) : (
+          /* Visited - Show Rating Section */
+          <div className="space-y-4">
+            {/* Star Rating Component */}
+            <div className="text-center">
+              {!model.rating_submitted && (
+                <p className="text-sm text-gray-600 mb-2">Rate this model:</p>
+              )}
+              <StarRating
+                rating={currentRating}
+                onRate={handleRate}
+                readonly={model.rating_submitted}
+                size={32}
+              />
+            </div>
+
+            {/* Submit Rating Button or Status */}
+            {!model.rating_submitted && (
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting || currentRating === 0}
+                className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 
+                         active:scale-95 touch-manipulation
+                         ${
+                           isSubmitting || currentRating === 0
+                             ? 'bg-gray-400 cursor-not-allowed'
+                             : 'bg-green-600 text-white active:bg-green-700 hover:bg-green-700'
+                         }`}
               >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Already Visited
-            </span>
-          ) : (
-            'Mark as Visited'
-          )}
-        </button>
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Submitting...
+                  </span>
+                ) : (
+                  'Submit Rating'
+                )}
+              </button>
+            )}
+
+            {/* Already Visited Status */}
+            {/* <div className="text-center">
+              <span className="inline-flex items-center text-sm text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                <svg
+                  className="w-4 h-4 mr-1"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Already Visited
+              </span>
+            </div> */}
+          </div>
+        )}
 
         {/* Description if available */}
         {model.desc && (

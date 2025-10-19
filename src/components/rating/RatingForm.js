@@ -26,7 +26,7 @@ const RatingForm = ({ modelNumber, onSuccess }) => {
       success: 'Your rating has been submitted successfully!',
       loading: 'Loading...',
       modelNotFound: 'Model Not Found',
-      viewDashboard: 'View Dashboard',
+      viewDashboard: 'View Model Ratings',
     },
     ur: {
       title: 'اس ماڈل کی درجہ بندی کریں',
