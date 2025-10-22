@@ -129,7 +129,7 @@ const App = () => {
           </a>
 
           <a
-            href="#dashboard"
+            href="/dashboard"
             className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
           >
             <TrendingUp className="text-blue-600 mb-4" size={48} />

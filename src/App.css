@@ -32,7 +32,6 @@
   align-items: center;
   justify-content: space-evenly;
   padding: 0rem 8rem;
-
 }
 
 @keyframes App-logo-spin {
@@ -42,4 +41,57 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.count-up {
+  animation: countUp 1s ease-out forwards;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+.chart-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.chart-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 500ms, transform 500ms;
+}
+
+.chart-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.chart-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 500ms, transform 500ms;
 }
