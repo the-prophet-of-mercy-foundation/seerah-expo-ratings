@@ -18,7 +18,8 @@ export async function getModels() {
     .select(
       'id, model_number, name_en, name_ur, location, created_at, updated_at',
     )
-    .order('location', { ascending: true });
+    .order('location', { ascending: true })
+    .order('model_number', { ascending: true });
   if (error) {
     console.log('Error fetching models:', error);
     if (cachedModels) {

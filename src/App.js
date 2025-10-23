@@ -78,120 +78,154 @@ const App = () => {
     };
   }, []);
 
-  if (currentView === 'rating' && modelNumber) {
+  // Render main content based on current view
+  const renderMainContent = () => {
+    if (currentView === 'rating' && modelNumber) {
+      return (
+        <RatingForm
+          modelNumber={modelNumber}
+          onSuccess={() => (window.location.hash = 'dashboard')}
+        />
+      );
+    }
+
+    if (currentView === 'dashboard') {
+      return <Dashboard />;
+    }
+
+    if (currentView === 'admin') {
+      return <AdminPanel />;
+    }
+
+    if (currentView === 'register') {
+      return <UserRegister />;
+    }
+
+    if (currentView === 'models') {
+      return <ModelsView />;
+    }
+
+    // Home Page
     return (
-      <RatingForm
-        modelNumber={modelNumber}
-        onSuccess={() => (window.location.hash = 'dashboard')}
-      />
-    );
-  }
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-gray-800 mb-4">
+              Prophet Muhammad Exhibition
+            </h1>
+            <p className="text-xl text-gray-600">Life & Times Rating System</p>
+          </div>
 
-  if (currentView === 'dashboard') {
-    return <Dashboard />;
-  }
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            <a
+              href="/models"
+              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+            >
+              <Star className="text-emerald-600 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Rate Models
+              </h2>
+              <p className="text-gray-600">
+                Share your experience and rate the exhibition models
+              </p>
+            </a>
 
-  if (currentView === 'admin') {
-    return <AdminPanel />;
-  }
+            <a
+              href="/dashboard"
+              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+            >
+              <TrendingUp className="text-blue-600 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Live Dashboard
+              </h2>
+              <p className="text-gray-600">
+                View real-time rankings and statistics
+              </p>
+            </a>
 
-  if (currentView === 'register') {
-    return <UserRegister />;
-  }
+            <a
+              href="/"
+              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+            >
+              <Menu className="text-purple-600 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Admin Panel
+              </h2>
+              <p className="text-gray-600">
+                Manage models, volunteers, and export data
+              </p>
+            </a>
+          </div>
 
-  if (currentView === 'models') {
-    return <ModelsView />;
-  }
-
-  // Home Page
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-800 mb-4">
-            Prophet Muhammad Exhibition
-          </h1>
-          <p className="text-xl text-gray-600">Life & Times Rating System</p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <a
-            href="/models"
-            className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
-          >
-            <Star className="text-emerald-600 mb-4" size={48} />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Rate Models
-            </h2>
-            <p className="text-gray-600">
-              Share your experience and rate the exhibition models
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">
+              About the Exhibition
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Experience the life and times of Prophet Muhammad (peace be upon
+              him) through meticulously crafted 3D models depicting historical
+              places and structures from 7th century Arabia.
             </p>
-          </a>
-
-          <a
-            href="/dashboard"
-            className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
-          >
-            <TrendingUp className="text-blue-600 mb-4" size={48} />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Live Dashboard
-            </h2>
-            <p className="text-gray-600">
-              View real-time rankings and statistics
+            <p className="text-gray-600 mb-4">
+              Each model is accompanied by knowledgeable volunteers who share
+              the historical significance and Islamic context of these sacred
+              sites.
             </p>
-          </a>
-
-          <a
-            href="/"
-            className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
-          >
-            <Menu className="text-purple-600 mb-4" size={48} />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Admin Panel
-            </h2>
-            <p className="text-gray-600">
-              Manage models, volunteers, and export data
-            </p>
-          </a>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">
-            About the Exhibition
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Experience the life and times of Prophet Muhammad (peace be upon
-            him) through meticulously crafted 3D models depicting historical
-            places and structures from 7th century Arabia.
-          </p>
-          <p className="text-gray-600 mb-4">
-            Each model is accompanied by knowledgeable volunteers who share the
-            historical significance and Islamic context of these sacred sites.
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-emerald-600">100</div>
-              <div className="text-sm text-gray-600">Models</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">4</div>
-              <div className="text-sm text-gray-600">Days</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600">3</div>
-              <div className="text-sm text-gray-600">Languages</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600">10K</div>
-              <div className="text-sm text-gray-600">Visitors</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-emerald-600">100</div>
+                <div className="text-sm text-gray-600">Models</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">4</div>
+                <div className="text-sm text-gray-600">Days</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">3</div>
+                <div className="text-sm text-gray-600">Languages</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-orange-600">10K</div>
+                <div className="text-sm text-gray-600">Visitors</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-8 text-center text-gray-600 text-sm">
-          <p>May peace and blessings be upon Prophet Muhammad ﷺ</p>
+          <div className="mt-8 text-center text-gray-600 text-sm">
+            <p>May peace and blessings be upon Prophet Muhammad ﷺ</p>
+          </div>
         </div>
       </div>
+    );
+  };
+
+  return (
+    <div className="relative">
+      {/* Main Content */}
+      {renderMainContent()}
+
+      {/* Fixed Home Icon - Bottom Right Corner on ALL screens EXCEPT home */}
+      {currentView !== 'home' && (
+        <button
+          onClick={() => (window.location.href = '/')}
+          className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white p-4 rounded-full shadow-lg hover:bg-emerald-700 transition-colors hover:shadow-xl active:scale-95"
+          aria-label="Home"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };

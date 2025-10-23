@@ -283,6 +283,11 @@ const ModelsView = () => {
         <h3 className="text-base md:text-lg font-semibold text-gray-800 text-center mb-3 md:mb-4 leading-tight line-clamp-3">
           {model.name_en}
         </h3>
+        {model.name_ur && (
+          <h3 className="text-base md:text-lg font-semibold text-gray-800 text-center mb-3 md:mb-4 leading-tight line-clamp-3">
+            {model.name_ur}
+          </h3>
+        )}
 
         {/* Conditional Rendering based on visited status */}
         {!isVisited ? (
@@ -457,74 +462,81 @@ const ModelsView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            {/* Visited - Success State */}
-            <div className="bg-white rounded-lg shadow-md p-2 text-center border border-emerald-100">
-              <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
-                Visited
+      {/* Fixed Header */}
+      <div className="fixed top-0 left-0 right-0 z-40">
+        {/* Header Content */}
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              {/* Visited - Success State */}
+              <div className="bg-white rounded-lg shadow-md p-2 text-center border border-emerald-100">
+                <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
+                  Visited
+                </div>
+                <div className="text-7xl font-bold text-emerald-600">
+                  {visitedCount}
+                </div>
               </div>
-              <div className="text-7xl font-bold text-emerald-600">
-                {visitedCount}
-              </div>
-            </div>
 
-            {/* Not Visited - Warning State */}
-            <div className="bg-white rounded-lg shadow-md p-2 text-center border border-red-100">
-              <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
-                Not Visited
+              {/* Not Visited - Warning State */}
+              <div className="bg-white rounded-lg shadow-md p-2 text-center border border-red-100">
+                <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
+                  Not Visited
+                </div>
+                <div className="text-7xl font-bold text-red-500">
+                  {notVisitedCount}
+                </div>
               </div>
-              <div className="text-7xl font-bold text-red-500">
-                {notVisitedCount}
-              </div>
-            </div>
 
-            {/* Reviewed - Success State */}
-            <div className="bg-white rounded-lg shadow-md p-2 text-center border border-emerald-100">
-              <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
-                Reviewed
-              </div>
-              <div className="text-7xl font-bold text-emerald-600">
-                {reviewedCount}
+              {/* Reviewed - Success State */}
+              <div className="bg-white rounded-lg shadow-md p-2 text-center border border-emerald-100">
+                <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
+                  Reviewed
+                </div>
+                <div className="text-7xl font-bold text-emerald-600">
+                  {reviewedCount}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Ultra-thin Progress Bar - Attached to header */}
-      <div
-        className="w-full bg-white h-[0.4rem]"
-        style={{ margin: 0, padding: 0, border: 'none' }}
-      >
+        {/* Ultra-thin Progress Bar - Attached to header */}
         <div
-          className="bg-[#182d24] h-[0.4rem] transition-all duration-500 ease-out"
-          style={{
-            width: `${ratedPercentage}%`,
-            margin: 0,
-            padding: 0,
-            border: 'none',
-          }}
-        ></div>
+          className="w-full bg-white h-[0.4rem]"
+          style={{ margin: 0, padding: 0, border: 'none' }}
+        >
+          <div
+            className="bg-[#182d24] h-[0.4rem] transition-all duration-500 ease-out"
+            style={{
+              width: `${ratedPercentage}%`,
+              margin: 0,
+              padding: 0,
+              border: 'none',
+            }}
+          ></div>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 md:py-6">
-        <div className="bg-white p-4 md:p-6 rounded-lg shadow">
-          {/* Models Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {exhibitData.map((model) => (
-              <SubModelCard
-                key={model.model_number}
-                model={model}
-                onVisitToggle={handleVisitToggle}
-                onSubmitRating={handleSubmitRating}
-                onViewDescription={handleOpenDescription}
-              />
-            ))}
+      {/* Main Content - Adjusted for fixed header */}
+      <div className="pt-48">
+        {' '}
+        {/* Increased padding to account for fixed header */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 md:py-6">
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+            {/* Models Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {exhibitData.map((model) => (
+                <SubModelCard
+                  key={model.model_number}
+                  model={model}
+                  onVisitToggle={handleVisitToggle}
+                  onSubmitRating={handleSubmitRating}
+                  onViewDescription={handleOpenDescription}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
