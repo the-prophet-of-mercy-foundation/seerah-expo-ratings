@@ -452,49 +452,63 @@ const ModelsView = () => {
   };
 
   const visitedCount = exhibitData.filter((m) => m.visited).length;
+  const reviewedCount = exhibitData.filter((m) => m.rating_submitted).length;
+  const notVisitedCount = exhibitData.length - visitedCount;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
-          <div className="flex justify-between items-center mb-4">
-            <button
-              onClick={() => (window.location.href = '/')}
-              className="bg-white text-emerald-700 px-4 py-2 rounded-lg font-semibold hover:bg-emerald-50 transition-colors"
-            >
-              Home
-            </button>
-          </div>
-
           {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-2 text-center mb-4">
-            <div className="bg-emerald-500 bg-opacity-20 p-2 rounded">
-              <div className="text-xs text-emerald-200">Visited</div>
-              <div className="text-7xl font-bold">{visitedCount}</div>
-            </div>
-            <div className="bg-emerald-500 bg-opacity-20 p-2 rounded">
-              <div className="text-xs text-emerald-200">Not Visited</div>
-              <div className="text-7xl font-bold">
-                {exhibitData.length - visitedCount}
+          <div className="grid grid-cols-3 gap-3">
+            {/* Visited - Success State */}
+            <div className="bg-white rounded-lg shadow-md p-2 text-center border border-emerald-100">
+              <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
+                Visited
+              </div>
+              <div className="text-7xl font-bold text-emerald-600">
+                {visitedCount}
               </div>
             </div>
-            <div className="bg-emerald-500 bg-opacity-20 p-2 rounded">
-              <div className="text-xs text-emerald-200">Reviewed</div>
-              <div className="text-7xl font-bold">
-                {exhibitData.filter((m) => m.rating_submitted).length}
-              </div>
-            </div>
-          </div>
 
-          {/* Progress Bar */}
-          <div className="w-full bg-emerald-200 bg-opacity-30 rounded-full h-2">
-            <div
-              className="bg-white h-2 rounded-full transition-all duration-500"
-              style={{ width: `${ratedPercentage}%` }}
-            ></div>
+            {/* Not Visited - Warning State */}
+            <div className="bg-white rounded-lg shadow-md p-2 text-center border border-red-100">
+              <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
+                Not Visited
+              </div>
+              <div className="text-7xl font-bold text-red-500">
+                {notVisitedCount}
+              </div>
+            </div>
+
+            {/* Reviewed - Success State */}
+            <div className="bg-white rounded-lg shadow-md p-2 text-center border border-emerald-100">
+              <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-2">
+                Reviewed
+              </div>
+              <div className="text-7xl font-bold text-emerald-600">
+                {reviewedCount}
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Ultra-thin Progress Bar - Attached to header */}
+      <div
+        className="w-full bg-white h-[0.4rem]"
+        style={{ margin: 0, padding: 0, border: 'none' }}
+      >
+        <div
+          className="bg-[#182d24] h-[0.4rem] transition-all duration-500 ease-out"
+          style={{
+            width: `${ratedPercentage}%`,
+            margin: 0,
+            padding: 0,
+            border: 'none',
+          }}
+        ></div>
       </div>
 
       {/* Main Content */}
