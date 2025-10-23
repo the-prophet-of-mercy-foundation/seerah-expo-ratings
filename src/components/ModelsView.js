@@ -2,20 +2,24 @@ import React, { useEffect, useState } from 'react';
 import StarRating from './rating/StartRating';
 import { getModels } from '../lib/modelsApi';
 import { submitRating } from '../lib/ratingUtils';
+import { supabase } from '../lib/supabaseClient';
 
 const ModelsView = () => {
   const [exhibitData, setExhibitData] = useState([]);
-  const [modelGroups, setModelGroups] = useState({});
-  const [currentView, setCurrentView] = useState('groups');
-  const [selectedGroup, setSelectedGroup] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [descriptionModal, setDescriptionModal] = useState({
+    isOpen: false,
+    model: null,
+    loading: false,
+    descriptions: { en: '', ur: '', kn: '' },
+    activeTab: 'en',
+  });
 
   // Load data from localStorage or API
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-
         const saved = localStorage.getItem('modelsCache');
         let data = [];
 
@@ -33,7 +37,6 @@ const ModelsView = () => {
         if (data.length === 0) {
           data = await getModels();
           if (data && Array.isArray(data)) {
-            // Initialize visited, user_rating, and rating_submitted properties
             const dataWithDefaults = data.map((item) => ({
               ...item,
               visited: item.visited || 0,
@@ -59,63 +62,15 @@ const ModelsView = () => {
     loadData();
   }, []);
 
-  // Process exhibitData into model groups
-  useEffect(() => {
-    if (exhibitData.length === 0) return;
-
-    const groups = {};
-
-    exhibitData.forEach((model) => {
-      const location = model.location;
-
-      if (!groups[location]) {
-        groups[location] = {
-          totalModels: 0,
-          visitedCount: 0,
-          models: [],
-        };
-      }
-
-      groups[location].models.push({
-        id: model.model_number,
-        name: model.name_en,
-        desc: model.description_en,
-        visited: model.visited || 0,
-        user_rating: model.user_rating || 0,
-        rating_submitted: model.rating_submitted || false,
-      });
-
-      groups[location].totalModels++;
-
-      if (model.visited) {
-        groups[location].visitedCount++;
-      }
-    });
-
-    // Calculate percentages
-    Object.keys(groups).forEach((location) => {
-      const group = groups[location];
-      group.visitedPercent =
-        group.totalModels > 0
-          ? (group.visitedCount / group.totalModels) * 100
-          : 0;
-    });
-
-    setModelGroups(groups);
-  }, [exhibitData]);
-
   // Handle visit toggle
-  const handleVisitToggle = (modelId, groupName) => {
+  const handleVisitToggle = (modelId) => {
     setExhibitData((prevData) => {
       const updatedData = prevData.map((model) =>
         model.model_number === modelId
-          ? { ...model, visited: model.visited ? 0 : 1 } // Toggle between 0 and 1
+          ? { ...model, visited: model.visited ? 0 : 1 }
           : model,
       );
-
-      // Update localStorage
       localStorage.setItem('modelsCache', JSON.stringify(updatedData));
-
       return updatedData;
     });
   };
@@ -123,26 +78,20 @@ const ModelsView = () => {
   // Handle rating submission
   const handleSubmitRating = async (modelId, rating) => {
     try {
-      // Get user_id from localStorage
       const user_id = localStorage.getItem('user_id');
-
       if (!user_id) {
         alert('User not found. Please log in again.');
         return;
       }
 
-      // Create rating object
       const ratingData = {
         user_id: user_id,
         model_number: modelId,
         star_rating: rating,
       };
 
-      // Call submitRating API (you'll need to import this function)
       const response = await submitRating(ratingData);
-
       if (response && Array.isArray(response) && response.length > 0) {
-        // Update exhibitData with rating submission status
         setExhibitData((prevData) => {
           const updatedData = prevData.map((model) =>
             model.model_number === modelId
@@ -153,10 +102,7 @@ const ModelsView = () => {
                 }
               : model,
           );
-
-          // Update localStorage
           localStorage.setItem('modelsCache', JSON.stringify(updatedData));
-
           return updatedData;
         });
       } else {
@@ -168,16 +114,81 @@ const ModelsView = () => {
     }
   };
 
-  // Handle group click with mobile-friendly touch feedback
-  const handleGroupClick = (groupName) => {
-    setSelectedGroup(groupName);
-    setCurrentView('subModels');
+  // Fetch description data for a specific model
+  const fetchModelDescription = async (modelNumber) => {
+    setDescriptionModal((prev) => ({ ...prev, loading: true }));
+
+    try {
+      const { data, error } = await supabase
+        .from('models')
+        .select('description_en, description_ur, description_kn')
+        .eq('model_number', modelNumber)
+        .single();
+
+      if (error) {
+        console.error('Error fetching description:', error);
+        throw error;
+      }
+
+      setDescriptionModal((prev) => ({
+        ...prev,
+        descriptions: {
+          en: data.description_en || 'No description available in English.',
+          ur: data.description_ur || 'اردو میں تفصیل دستیاب نہیں ہے۔',
+          kn: data.description_kn || 'ಕನ್ನಡದಲ್ಲಿ ವಿವರಣೆ ಲಭ್ಯವಿಲ್ಲ.',
+        },
+        loading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch description:', error);
+      setDescriptionModal((prev) => ({
+        ...prev,
+        descriptions: {
+          en: 'Failed to load description.',
+          ur: 'تفصیل لوڈ کرنے میں ناکامی۔',
+          kn: 'ವಿವರಣೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ.',
+        },
+        loading: false,
+      }));
+    }
   };
 
-  const handleBackToGroups = () => {
-    setCurrentView('groups');
-    setSelectedGroup(null);
+  // Handle opening description modal
+  const handleOpenDescription = async (model) => {
+    setDescriptionModal({
+      isOpen: true,
+      model: model,
+      loading: true,
+      descriptions: { en: '', ur: '', kn: '' },
+      activeTab: 'en',
+    });
+
+    await fetchModelDescription(model.model_number);
   };
+
+  // Handle closing description modal
+  const handleCloseDescription = () => {
+    setDescriptionModal({
+      isOpen: false,
+      model: null,
+      loading: false,
+      descriptions: { en: '', ur: '', kn: '' },
+      activeTab: 'en',
+    });
+  };
+
+  // Handle tab change
+  const handleTabChange = (tab) => {
+    setDescriptionModal((prev) => ({ ...prev, activeTab: tab }));
+  };
+
+  // Calculate rated percentage for progress bar
+  const ratedPercentage =
+    exhibitData.length > 0
+      ? (exhibitData.filter((m) => m.rating_submitted).length /
+          exhibitData.length) *
+        100
+      : 0;
 
   // Loading state
   if (loading) {
@@ -206,136 +217,12 @@ const ModelsView = () => {
     );
   }
 
-  // Model Groups View - Mobile Optimized
-  const ModelGroupsView = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-      {Object.keys(modelGroups).map((groupName) => {
-        const group = modelGroups[groupName];
-        const isComplete = group.visitedPercent === 100;
-
-        return (
-          <div
-            key={groupName}
-            onClick={() => handleGroupClick(groupName)}
-            className="bg-white p-4 md:p-6 rounded-xl shadow-lg border-t-4 cursor-pointer 
-                      active:scale-95 transition-all duration-300 
-                      hover:scale-105 hover:shadow-xl touch-manipulation
-                      border-indigo-500"
-          >
-            {/* Header */}
-            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-3 md:mb-4 line-clamp-2">
-              {groupName}
-            </h2>
-
-            {/* Stats - Stack on mobile, row on desktop */}
-            <div className="space-y-2 md:space-y-3 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-600 text-xs md:text-sm">
-                  Total:
-                </span>
-                <span className="text-gray-800 font-semibold text-sm md:text-base">
-                  {group.totalModels}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-600 text-xs md:text-sm">
-                  Visited:
-                </span>
-                <span className="text-indigo-600 font-semibold text-sm md:text-base">
-                  {group.visitedCount}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-600 text-xs md:text-sm">
-                  Complete:
-                </span>
-                <span
-                  className={`font-semibold text-sm md:text-base ${
-                    isComplete ? 'text-green-600' : 'text-indigo-600'
-                  }`}
-                >
-                  {group.visitedPercent.toFixed(0)}%
-                </span>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mt-3 md:mt-4 w-full bg-gray-200 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  isComplete ? 'bg-green-500' : 'bg-indigo-500'
-                }`}
-                style={{ width: `${group.visitedPercent}%` }}
-              ></div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  // Sub Models View - Mobile Optimized
-  const SubModelsView = () => {
-    const group = modelGroups[selectedGroup];
-    if (!group) return null;
-
-    return (
-      <div>
-        {/* Back Button and Header - Mobile responsive */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-          <button
-            onClick={handleBackToGroups}
-            className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium 
-                    transition-colors active:scale-95 w-fit px-3 py-2 rounded-lg
-                    active:bg-indigo-50 touch-manipulation"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back to Groups
-          </button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex-1 text-center sm:text-left">
-            {selectedGroup}
-            <span className="text-indigo-600 ml-2">
-              ({group.models.length})
-            </span>
-          </h1>
-        </div>
-
-        {/* Sub Models Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {group.models.map((model) => (
-            <SubModelCard
-              key={model.id}
-              model={model}
-              groupName={selectedGroup}
-              onVisitToggle={handleVisitToggle}
-              onSubmitRating={handleSubmitRating}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Sub Model Card Component - Enhanced with Star Rating
+  // Sub Model Card Component
   const SubModelCard = ({
     model,
-    groupName,
     onVisitToggle,
     onSubmitRating,
+    onViewDescription,
   }) => {
     const isVisited = model.visited === 1;
     const [isTapping, setIsTapping] = useState(false);
@@ -354,10 +241,9 @@ const ModelsView = () => {
         alert('Please select a rating before submitting.');
         return;
       }
-
       setIsSubmitting(true);
       try {
-        await onSubmitRating(model.id, currentRating);
+        await onSubmitRating(model.model_number, currentRating);
       } finally {
         setIsSubmitting(false);
       }
@@ -378,24 +264,31 @@ const ModelsView = () => {
         onMouseUp={handleTapEnd}
         onMouseLeave={handleTapEnd}
       >
-        {/* Model ID */}
-        <div className="text-center mb-3 md:mb-4">
+        {/* Model ID and Location - Top Left */}
+        <div className="flex items-center gap-2 mb-3 md:mb-4">
           <span className="inline-block bg-indigo-100 text-indigo-800 text-xs md:text-sm font-mono px-2 md:px-3 py-1 rounded-full">
-            {model.id}
+            {model.model_number}
           </span>
+          {model.location && (
+            <>
+              <span className="text-gray-400">|</span>
+              <span className="text-gray-600 text-xs md:text-sm">
+                {model.location}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Model Name */}
         <h3 className="text-base md:text-lg font-semibold text-gray-800 text-center mb-3 md:mb-4 leading-tight line-clamp-3">
-          {model.name}
+          {model.name_en}
         </h3>
 
         {/* Conditional Rendering based on visited status */}
         {!isVisited ? (
           /* Not Visited - Show Visit Button */
           <button
-            onClick={() => onVisitToggle(model.id, groupName)}
-            disabled={isVisited}
+            onClick={() => onVisitToggle(model.model_number)}
             className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 
                      active:scale-95 touch-manipulation
                      bg-indigo-600 text-white active:bg-indigo-700 hover:bg-indigo-700`}
@@ -441,53 +334,165 @@ const ModelsView = () => {
                 )}
               </button>
             )}
-
-            {/* Already Visited Status */}
-            {/* <div className="text-center">
-              <span className="inline-flex items-center text-sm text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                <svg
-                  className="w-4 h-4 mr-1"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Already Visited
-              </span>
-            </div> */}
           </div>
         )}
 
-        {/* Description if available */}
-        {model.desc && (
-          <p className="mt-3 text-xs md:text-sm text-gray-600 text-center line-clamp-2">
-            {model.desc}
-          </p>
-        )}
+        {/* View Description Button - Always visible */}
+        <button
+          onClick={() => onViewDescription(model)}
+          className="w-full mt-4 py-2 px-4 border border-blue-600 text-blue-600 rounded-lg font-semibold transition-all duration-300 
+                   active:scale-95 touch-manipulation hover:bg-blue-50 active:bg-blue-100"
+        >
+          View Description
+        </button>
       </div>
     );
   };
+
+  // Description Modal Component
+  const DescriptionModal = () => {
+    if (!descriptionModal.isOpen) return null;
+
+    const { model, loading, descriptions, activeTab } = descriptionModal;
+    const tabLabels = {
+      en: 'English',
+      ur: 'اردو', // Urdu in Urdu script
+      kn: 'ಕನ್ನಡ', // Kannada in Kannada script
+    };
+
+    return (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+        onClick={handleCloseDescription}
+        style={{ overflow: 'hidden' }}
+      >
+        <div
+          className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col my-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">
+                {model?.model_number} - {model?.name_en}
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">Model Description</p>
+            </div>
+            <button
+              onClick={handleCloseDescription}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100 active:scale-95"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="border-b border-gray-200">
+            <div className="flex overflow-x-auto">
+              {Object.entries(tabLabels).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => handleTabChange(key)}
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap
+                           ${
+                             activeTab === key
+                               ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                               : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                           }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-auto p-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">
+                  Loading description...
+                </span>
+              </div>
+            ) : (
+              <div className="prose max-w-none">
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {descriptions[activeTab]}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-gray-200 p-4 bg-gray-50 rounded-b-xl">
+            <button
+              onClick={handleCloseDescription}
+              className="w-full py-3 px-4 bg-gray-600 text-white rounded-lg font-semibold transition-all duration-300 
+                       active:scale-95 touch-manipulation hover:bg-gray-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const visitedCount = exhibitData.filter((m) => m.visited).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
-          <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">
-            Exhibition Floor Plan
-          </h1>
-          <p className="text-emerald-100 text-sm md:text-base">
-            Know the layout of the exhibition and navigate easily
-          </p>
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => (window.location.href = '/')}
+              className="bg-white text-emerald-700 px-4 py-2 rounded-lg font-semibold hover:bg-emerald-50 transition-colors"
+            >
+              Home
+            </button>
+          </div>
+
           {/* Quick Stats */}
-          <div className="mt-2 text-emerald-200 text-xs md:text-sm flex gap-4">
-            <span>{exhibitData.length} models</span>
-            <span>{exhibitData.filter((m) => m.visited).length} visited</span>
-            <span>{Object.keys(modelGroups).length} groups</span>
+          <div className="grid grid-cols-3 gap-2 text-center mb-4">
+            <div className="bg-emerald-500 bg-opacity-20 p-2 rounded">
+              <div className="text-xs text-emerald-200">Visited</div>
+              <div className="text-7xl font-bold">{visitedCount}</div>
+            </div>
+            <div className="bg-emerald-500 bg-opacity-20 p-2 rounded">
+              <div className="text-xs text-emerald-200">Not Visited</div>
+              <div className="text-7xl font-bold">
+                {exhibitData.length - visitedCount}
+              </div>
+            </div>
+            <div className="bg-emerald-500 bg-opacity-20 p-2 rounded">
+              <div className="text-xs text-emerald-200">Reviewed</div>
+              <div className="text-7xl font-bold">
+                {exhibitData.filter((m) => m.rating_submitted).length}
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-emerald-200 bg-opacity-30 rounded-full h-2">
+            <div
+              className="bg-white h-2 rounded-full transition-all duration-500"
+              style={{ width: `${ratedPercentage}%` }}
+            ></div>
           </div>
         </div>
       </div>
@@ -495,9 +500,23 @@ const ModelsView = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 md:py-6">
         <div className="bg-white p-4 md:p-6 rounded-lg shadow">
-          {currentView === 'groups' ? <ModelGroupsView /> : <SubModelsView />}
+          {/* Models Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {exhibitData.map((model) => (
+              <SubModelCard
+                key={model.model_number}
+                model={model}
+                onVisitToggle={handleVisitToggle}
+                onSubmitRating={handleSubmitRating}
+                onViewDescription={handleOpenDescription}
+              />
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Description Modal */}
+      <DescriptionModal />
     </div>
   );
 };

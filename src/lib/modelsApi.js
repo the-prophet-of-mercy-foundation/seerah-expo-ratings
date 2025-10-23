@@ -13,7 +13,12 @@ export async function getModels() {
     }
   }
 
-  const { data, error } = await supabase.from('models').select();
+  const { data, error } = await supabase
+    .from('models')
+    .select(
+      'id, model_number, name_en, name_ur, location, created_at, updated_at',
+    )
+    .order('location', { ascending: true });
   if (error) {
     console.log('Error fetching models:', error);
     if (cachedModels) {
