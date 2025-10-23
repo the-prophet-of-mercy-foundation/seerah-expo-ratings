@@ -252,12 +252,8 @@ const ModelsView = () => {
     return (
       <div
         className={`bg-white p-4 md:p-6 rounded-xl shadow-lg border-2 transition-all duration-300 
-                 ${
-                   isVisited
-                     ? 'border-green-400 bg-green-50'
-                     : 'border-gray-200'
-                 }
-                 ${isTapping ? 'scale-95' : 'hover:shadow-xl'}`}
+               ${isVisited ? 'border-green-400 bg-green-50' : 'border-gray-200'}
+               ${isTapping ? 'scale-95' : 'hover:shadow-xl'}`}
         onTouchStart={handleTapStart}
         onTouchEnd={handleTapEnd}
         onMouseDown={handleTapStart}
@@ -289,25 +285,37 @@ const ModelsView = () => {
           </h3>
         )}
 
+        {/* Description Link - Below Model Names */}
+        <div className="text-center mb-3 md:mb-4">
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              onViewDescription(model);
+            }}
+            className="text-blue-600 hover:text-blue-800 underline text-sm md:text-base transition-colors duration-200"
+          >
+            {'Learn More About This Model>>'}
+          </a>
+        </div>
+
         {/* Conditional Rendering based on visited status */}
         {!isVisited ? (
           /* Not Visited - Show Visit Button */
           <button
             onClick={() => onVisitToggle(model.model_number)}
             className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 
-                     active:scale-95 touch-manipulation
-                     bg-indigo-600 text-white active:bg-indigo-700 hover:bg-indigo-700`}
+         active:scale-95 touch-manipulation
+         bg-indigo-600 text-white active:bg-indigo-700 hover:bg-indigo-700 flex items-center justify-center gap-2`}
           >
-            Mark as Visited
+            ✓ Visited
           </button>
         ) : (
           /* Visited - Show Rating Section */
           <div className="space-y-4">
             {/* Star Rating Component */}
-            <div className="text-center">
-              {!model.rating_submitted && (
-                <p className="text-sm text-gray-600 mb-2">Rate this model:</p>
-              )}
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-lg">👉</span>
               <StarRating
                 rating={currentRating}
                 onRate={handleRate}
@@ -322,12 +330,12 @@ const ModelsView = () => {
                 onClick={handleSubmit}
                 disabled={isSubmitting || currentRating === 0}
                 className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 
-                         active:scale-95 touch-manipulation
-                         ${
-                           isSubmitting || currentRating === 0
-                             ? 'bg-gray-400 cursor-not-allowed'
-                             : 'bg-green-600 text-white active:bg-green-700 hover:bg-green-700'
-                         }`}
+                       active:scale-95 touch-manipulation
+                       ${
+                         isSubmitting || currentRating === 0
+                           ? 'bg-gray-400 cursor-not-allowed'
+                           : 'bg-green-600 text-white active:bg-green-700 hover:bg-green-700'
+                       }`}
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center">
@@ -341,15 +349,6 @@ const ModelsView = () => {
             )}
           </div>
         )}
-
-        {/* View Description Button - Always visible */}
-        <button
-          onClick={() => onViewDescription(model)}
-          className="w-full mt-4 py-2 px-4 border border-blue-600 text-blue-600 rounded-lg font-semibold transition-all duration-300 
-                   active:scale-95 touch-manipulation hover:bg-blue-50 active:bg-blue-100"
-        >
-          View Description
-        </button>
       </div>
     );
   };
