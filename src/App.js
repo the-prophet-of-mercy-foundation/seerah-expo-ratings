@@ -4,25 +4,86 @@ import Dashboard from './components/Dashboard';
 import RatingForm from './components/rating/RatingForm';
 import UserRegister from './components/UserRegister';
 import ModelsView from './components/ModelsView';
-import { Star, TrendingUp, Menu } from 'lucide-react';
+import LoginModal from './components/LoginModal';
+import ResetPasswordModal from './components/ResetPasswordModal';
+import { Star, TrendingUp, Menu, MicVocal } from 'lucide-react';
 import { visitTrack } from './lib/visitTrack';
 import { getModels } from './lib/modelsApi';
-import { generateUserID } from './lib/supabaseClient';
+import { generateUserID, supabase } from './lib/supabaseClient';
+import FeedbackPage from './components/FeedbackPage';
 
-// Main App Component with Router
 const App = () => {
   const [currentView, setCurrentView] = useState('home');
   const [modelNumber, setModelNumber] = useState(null);
+  const [user, setUser] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [pendingAdminView, setPendingAdminView] = useState(false);
+
+  // Check for existing session and reset tokens on mount
+  useEffect(() => {
+    const initializeApp = async () => {
+      // Check auth session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+
+      // Check for reset token in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const type = urlParams.get('type');
+      const accessToken = urlParams.get('access_token');
+      console.log('App initialized with URL params:', {
+        type,
+        accessToken,
+        urlParams,
+      });
+
+      if (type === 'recovery' && accessToken) {
+        console.log('Reset token found on app load');
+        setShowResetModal(true);
+      }
+
+      visitTrack();
+      getModels();
+      generateUserID();
+      localStorage.setItem('latestVisit', new Date().toISOString());
+    };
+
+    initializeApp();
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setUser(session?.user || null);
+
+      if (event === 'SIGNED_OUT' && currentView === 'admin') {
+        setCurrentView('home');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [currentView]);
 
   useEffect(() => {
-    visitTrack();
-    getModels();
-    generateUserID();
-
-    localStorage.setItem('latestVisit', new Date().toISOString());
     const handleLocationChange = () => {
-      // First check for path-based route like /rating?id=1
       const { pathname, search, hash } = window.location;
+
+      // Check for reset token in any navigation
+      const urlParams = new URLSearchParams(search);
+      const type = urlParams.get('type');
+      const accessToken = urlParams.get('email');
+      console.log('Location changed with URL params:', {
+        type,
+        accessToken,
+      });
+      if (type === 'recovery') {
+        setShowResetModal(true);
+        return;
+      }
+
+      // Existing route handling
       if (pathname && pathname.startsWith('/rating')) {
         const params = new URLSearchParams(search);
         const modelNumber = params.get('modelNumber');
@@ -31,9 +92,14 @@ const App = () => {
         return;
       }
 
-      // Path-based admin route
       if (pathname === '/admin') {
-        setCurrentView('admin');
+        if (user) {
+          setCurrentView('admin');
+        } else {
+          setPendingAdminView(true);
+          setShowLoginModal(true);
+          setCurrentView('home');
+        }
         return;
       }
 
@@ -52,7 +118,12 @@ const App = () => {
         return;
       }
 
-      // Fallback to existing hash-based routes
+      if (pathname === '/feedback') {
+        setCurrentView('feedback');
+        return;
+      }
+
+      // Fallback to hash-based routes
       const hashPart = (hash || '').slice(1);
       const [view, params] = hashPart.split('?');
       if (view === 'rate' && params) {
@@ -62,8 +133,16 @@ const App = () => {
         setCurrentView('rate');
       } else if (view === 'dashboard') {
         setCurrentView('dashboard');
+      } else if (view === 'feedback') {
+        setCurrentView('feedback');
       } else if (view === 'admin') {
-        setCurrentView('admin');
+        if (user) {
+          setCurrentView('admin');
+        } else {
+          setPendingAdminView(true);
+          setShowLoginModal(true);
+          setCurrentView('home');
+        }
       } else {
         setCurrentView('home');
       }
@@ -76,44 +155,95 @@ const App = () => {
       window.removeEventListener('hashchange', handleLocationChange);
       window.removeEventListener('popstate', handleLocationChange);
     };
-  }, []);
+  }, [user]);
 
-  // Render main content based on current view
-  const renderMainContent = () => {
-    if (currentView === 'rating' && modelNumber) {
-      return (
-        <RatingForm
-          modelNumber={modelNumber}
-          onSuccess={() => (window.location.hash = 'dashboard')}
-        />
-      );
+  /*************  ✨ Windsurf Command ⭐  *************/
+  /**
+   * Handles a successful login by updating the user state and
+   * redirecting to the admin view if the user was attempting to
+   * access the admin view before logging in.
+   * @param {Object} user The user object returned by Supabase
+   */
+  /*******  518a21ae-b643-413d-b425-ca3fdc38a7a4  *******/ const handleLoginSuccess =
+    (user) => {
+      setUser(user);
+      if (pendingAdminView) {
+        setCurrentView('admin');
+        setPendingAdminView(false);
+      }
+    };
+
+  const handleResetSuccess = () => {
+    // Optional: You can automatically open login modal after successful reset
+    // setShowLoginModal(true);
+  };
+
+  const handleAdminClick = (e) => {
+    e.preventDefault();
+    if (user) {
+      setCurrentView('admin');
+      window.history.pushState({}, '', '/admin');
+    } else {
+      setPendingAdminView(true);
+      setShowLoginModal(true);
     }
+  };
 
-    if (currentView === 'dashboard') {
-      return <Dashboard />;
-    }
-
-    if (currentView === 'admin') {
-      return <AdminPanel />;
-    }
-
-    if (currentView === 'register') {
-      return <UserRegister />;
-    }
-
-    if (currentView === 'models') {
-      return <ModelsView />;
-    }
-
-    // Home Page
+  // Render current view
+  if (currentView === 'rating' && modelNumber) {
     return (
+      <RatingForm
+        modelNumber={modelNumber}
+        onSuccess={() => (window.location.hash = 'dashboard')}
+      />
+    );
+  }
+
+  if (currentView === 'dashboard') {
+    return <Dashboard />;
+  }
+
+  if (currentView === 'admin' && user) {
+    return <AdminPanel user={user} />;
+  }
+
+  if (currentView === 'register') {
+    return <UserRegister />;
+  }
+
+  if (currentView === 'models') {
+    return <ModelsView />;
+  }
+
+  if (currentView === 'feedback') {
+    return (
+      <FeedbackPage
+        onBack={() => {
+          setCurrentView('home');
+          window.history.pushState({}, '', '/');
+        }}
+      />
+    );
+  }
+
+  // Home Page
+  return (
+    <>
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+        {/* Your existing home page JSX */}
         <div className="max-w-4xl mx-auto px-4 py-12">
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-gray-800 mb-4">
-              Prophet Muhammad Exhibition
-            </h1>
-            <p className="text-xl text-gray-600">Life & Times Rating System</p>
+            <a
+              href="/"
+              className="inline-flex items-center justify-center space-x-4"
+            >
+              <img src="/logo.png" alt="Exhibition Logo" className="h-16" />
+              <div className="text-left">
+                <h1 className="text-4xl font-bold text-gray-800 mb-0">
+                  Seerah Exhibition
+                </h1>
+              </div>
+            </a>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
@@ -123,10 +253,28 @@ const App = () => {
             >
               <Star className="text-emerald-600 mb-4" size={48} />
               <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Rate Models
+                View Models
               </h2>
               <p className="text-gray-600">
-                Share your experience and rate the exhibition models
+                Track your visit and rate the exhibition models
+              </p>
+            </a>
+
+            <a
+              href="/feedback"
+              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+              onClick={(e) => {
+                e.preventDefault();
+                setCurrentView('feedback');
+                window.history.pushState({}, '', '/feedback');
+              }}
+            >
+              <MicVocal className="text-red-600 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Feedback
+              </h2>
+              <p className="text-gray-600">
+                Your feedback helps us improve the experience
               </p>
             </a>
 
@@ -143,9 +291,9 @@ const App = () => {
               </p>
             </a>
 
-            <a
-              href="/"
-              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+            <button
+              onClick={handleAdminClick}
+              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1 text-left cursor-pointer"
             >
               <Menu className="text-purple-600 mb-4" size={48} />
               <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -154,79 +302,29 @@ const App = () => {
               <p className="text-gray-600">
                 Manage models, volunteers, and export data
               </p>
-            </a>
+            </button>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">
-              About the Exhibition
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Experience the life and times of Prophet Muhammad (peace be upon
-              him) through meticulously crafted 3D models depicting historical
-              places and structures from 7th century Arabia.
-            </p>
-            <p className="text-gray-600 mb-4">
-              Each model is accompanied by knowledgeable volunteers who share
-              the historical significance and Islamic context of these sacred
-              sites.
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-emerald-600">100</div>
-                <div className="text-sm text-gray-600">Models</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">4</div>
-                <div className="text-sm text-gray-600">Days</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">3</div>
-                <div className="text-sm text-gray-600">Languages</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600">10K</div>
-                <div className="text-sm text-gray-600">Visitors</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 text-center text-gray-600 text-sm">
-            <p>May peace and blessings be upon Prophet Muhammad ﷺ</p>
-          </div>
+          {/* Rest of your home page content */}
         </div>
       </div>
-    );
-  };
 
-  return (
-    <div className="relative">
-      {/* Main Content */}
-      {renderMainContent()}
+      {/* Modals */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => {
+          setShowLoginModal(false);
+          setPendingAdminView(false);
+        }}
+        onLoginSuccess={handleLoginSuccess}
+      />
 
-      {/* Fixed Home Icon - Bottom Right Corner on ALL screens EXCEPT home */}
-      {currentView !== 'home' && (
-        <button
-          onClick={() => (window.location.href = '/')}
-          className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white p-4 rounded-full shadow-lg hover:bg-emerald-700 transition-colors hover:shadow-xl active:scale-95"
-          aria-label="Home"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-            />
-          </svg>
-        </button>
-      )}
-    </div>
+      <ResetPasswordModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onResetSuccess={handleResetSuccess}
+      />
+    </>
   );
 };
 

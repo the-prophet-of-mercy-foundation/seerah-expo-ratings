@@ -1,9 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-export const supabase = createClient(
-  'https://atipdxvrlydcldrfshpi.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0aXBkeHZybHlkY2xkcmZzaHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0OTYzNzUsImV4cCI6MjA3NjA3MjM3NX0.JGah2Crk4vZFL5zpWIum3iwpMStU-ukZcEGr7KrTWfo',
-);
+// const supabaseUrl = 'https://atipdxvrlydcldrfshpi.supabase.co';
+// const supabaseAnonKey =
+//   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0aXBkeHZybHlkY2xkcmZzaHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0OTYzNzUsImV4cCI6MjA3NjA3MjM3NX0.JGah2Crk4vZFL5zpWIum3iwpMStU-ukZcEGr7KrTWfo';
+
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 export const initSampleData = () => {
   const models = Array.from({ length: 20 }, (_, i) => ({
