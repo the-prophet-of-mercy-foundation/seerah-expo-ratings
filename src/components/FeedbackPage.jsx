@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Send, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Send, CheckCircle, Edit } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { generateUserID } from '../lib/supabaseClient';
 
 const FeedbackPage = ({ onBack }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [currentLanguage, setCurrentLanguage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     // Personal Information
     name: '',
@@ -53,9 +56,11 @@ const FeedbackPage = ({ onBack }) => {
       next: 'Next',
       previous: 'Previous',
       submitFeedback: 'Submit Feedback',
+      updateFeedback: 'Update Feedback',
       thankYou: 'Thank You!',
       shukran: 'Shukran!',
       feedbackComplete: 'Feedback Complete',
+      editingFeedback: 'Editing Your Feedback',
 
       // Personal info fields
       yourName: 'Your Name *',
@@ -76,39 +81,43 @@ const FeedbackPage = ({ onBack }) => {
       // Options
       options: {
         overallExperience: [
-          'Extremely inspiring and unforgettable 🌙',
-          'Very good — touched my heart and increased my love for the Prophet ﷺ',
-          'Good — I liked it and learned something new',
-          'Average — it was nice but could be more engaging',
-          'Okay — I expected a bit more',
+          'Everything was well presented and worth visiting',
+          'Displays were interesting and I learned useful things',
+          'Some parts were informative and enjoyable',
+          'Certain sections could be improved for clarity',
+          'Content did not meet my expectations',
         ],
+
         organization: [
-          'Very well organized — everything was clear and easy to follow 🌟',
-          'Well organized — only minor delays or confusion',
-          'Fairly organized — a few things could be improved',
-          'Somewhat disorganized — I faced a few difficulties',
-          'Not organized well — it was confusing at times',
+          'Entry, exit, and guidance were clear throughout',
+          'Mostly smooth, with minor delays or confusion',
+          'Some areas needed better coordination',
+          'Directions or crowd management could be improved',
+          'Layout was confusing and lacked assistance',
         ],
+
         movement: [
-          'Very easy to move and view all models comfortably 🚶‍♂️',
-          'Easy — only a few areas were slightly crowded',
-          'Manageable — I could move around but not freely everywhere',
-          'A bit difficult — too many people or narrow space',
-          'Hard to move — I couldn’t see some models properly',
+          'Easy to walk and view all sections comfortably',
+          'Mostly easy, with minor crowded spots',
+          'Movement was slow in certain areas',
+          'Crowded or narrow in several sections',
+          'Difficult to move and view some displays',
         ],
+
         learning: [
-          "Learned many new things about the Prophet's ﷺ life and message 📖",
-          'Learned a few new lessons and reminders',
-          'Mostly revised what I already knew',
-          'Learned little new — presentation was more visual than informative',
-          'Did not learn much new, but it was spiritually refreshing',
+          'Gained a clear understanding of key lessons from Seerah',
+          'Learned many new and useful things',
+          'Learned a few new things; mostly familiar content',
+          'Mostly visual presentation with limited explanation',
+          'Not much new learning, mostly review',
         ],
+
         improvements: [
-          'Add more explanation boards or short summaries near each model',
-          'Use short videos or audio for storytelling',
-          'Provide more space and better visitor flow',
-          'Add activities or quiz corners for children',
-          'Everything was excellent — no changes needed 🌟',
+          'Add short videos or audio explanations near displays',
+          'Provide simple summary boards for each section',
+          'Increase space and improve visitor movement',
+          'Include a children’s learning or quiz corner',
+          'No changes needed; everything was well arranged',
         ],
       },
 
@@ -136,9 +145,11 @@ const FeedbackPage = ({ onBack }) => {
       next: 'اگلا',
       previous: 'پچھلا',
       submitFeedback: 'رائے جمع کریں',
+      updateFeedback: 'رائے اپ ڈیٹ کریں',
       thankYou: 'شکریہ!',
       shukran: 'شکران!',
       feedbackComplete: 'رائے مکمل',
+      editingFeedback: 'اپنی رائے میں ترمیم',
 
       // Personal info fields
       yourName: 'آپ کا نام *',
@@ -158,39 +169,43 @@ const FeedbackPage = ({ onBack }) => {
       // Options
       options: {
         overallExperience: [
-          'انتہائی متاثر کن اور ناقابل فراموش 🌙',
-          'بہت اچھا — دل کو چھو گیا اور محبتِ نبی ﷺ میں اضافہ ہوا',
-          'اچھا — کچھ نیا سیکھا اور لطف آیا',
-          'درمیانہ — اچھا تھا مگر مزید دلچسپ ہو سکتا تھا',
-          'ٹھیک — توقع سے کم محسوس ہوا',
+          'سب کچھ اچھی طرح پیش کیا گیا اور دیکھنے کے قابل تھا',
+          'نمائش دلچسپ تھی اور میں نے مفید باتیں سیکھی',
+          'کچھ حصے معلوماتی اور لطف اندوز تھے',
+          'کچھ حصوں کو وضاحت کے لیے بہتر بنایا جا سکتا تھا',
+          'مواد میری توقعات پر پورا نہیں اترا',
         ],
+
         organization: [
-          'انتہائی منظم — سب کچھ واضح اور آسان تھا 🌟',
-          'منظم — معمولی تاخیر یا کنفیوژن تھا',
-          'کافی منظم — چند چیزوں میں بہتری کی ضرورت ہے',
-          'کچھ غیر منظم — چند مشکلات پیش آئیں',
-          'غیر منظم — بعض اوقات سمجھنا مشکل تھا',
+          'داخلہ، خروج اور رہنمائی ہر جگہ واضح تھی',
+          'زیادہ تر سب اچھا تھا، کچھ چھوٹی تاخیر یا الجھن تھی',
+          'کچھ علاقوں میں بہتر ہم آہنگی کی ضرورت تھی',
+          'راستے یا ہجوم کا انتظام بہتر ہو سکتا تھا',
+          'لے آؤٹ الجھا ہوا تھا اور مدد نہیں تھی',
         ],
+
         movement: [
-          'تمام ماڈلز دیکھنے میں بہت آسانی رہی 🚶‍♂️',
-          'آسان — چند مقامات پر ہلکی بھیڑ تھی',
-          'قابلِ انتظام — کچھ جگہوں پر مشکل تھی',
-          'کچھ دشوار — جگہ کم یا بھیڑ زیادہ تھی',
-          'مشکل — کچھ ماڈلز صحیح طرح نہیں دیکھ سکا',
+          'سب حصے آرام سے دیکھنے اور چلنے میں آسان تھے',
+          'زیادہ تر آسان، کچھ جگہیں ہجوم والی تھیں',
+          'کچھ علاقوں میں چلنے کی رفتار سست تھی',
+          'کئی حصے بھیڑ یا تنگ تھے',
+          'کچھ نمائشیں دیکھنا اور حرکت کرنا مشکل تھا',
         ],
+
         learning: [
-          'نبی ﷺ کی زندگی اور پیغام کے بارے میں بہت کچھ نیا سیکھا 📖',
-          'چند نئے اسباق اور یاد دہانیاں حاصل ہوئیں',
-          'زیادہ تر وہی دہرایا جو پہلے سے معلوم تھا',
-          'نیا کم سیکھا — زیادہ تر بصری نمائش تھی',
-          'زیادہ نیا نہیں سیکھا مگر روحانی فائدہ ہوا',
+          'سیرت کے اہم سبق کی واضح سمجھ حاصل ہوئی',
+          'بہت ساری نئی اور مفید باتیں سیکھی',
+          'کچھ نئی باتیں سیکھی، زیادہ تر مواد معلوم تھا',
+          'زیادہ تر بصری نمائش تھی، وضاحت محدود تھی',
+          'زیادہ نئی باتیں نہیں سیکھی، زیادہ تر نظرثانی تھی',
         ],
+
         improvements: [
-          'ہر ماڈل کے قریب مختصر وضاحت یا خلاصہ شامل کریں',
-          'کہانی سنانے کے لیے ویڈیو یا آڈیو استعمال کریں',
-          'مزید جگہ اور بہتر گزرگاہ فراہم کریں',
-          'بچوں کے لیے سرگرمیاں یا کوئز شامل کریں',
-          'سب کچھ بہترین تھا — کوئی تبدیلی کی ضرورت نہیں 🌟',
+          'نمائش کے قریب مختصر ویڈیوز یا صوتی وضاحتیں شامل کریں',
+          'ہر سیکشن کے لیے سادہ خلاصہ بورڈز فراہم کریں',
+          'جگہ بڑھائیں اور وزیٹر کی حرکت کو بہتر کریں',
+          'بچوں کے لیے سیکھنے یا کوئز کا حصہ شامل کریں',
+          'کسی تبدیلی کی ضرورت نہیں؛ سب کچھ اچھے طریقے سے ترتیب دیا گیا تھا',
         ],
       },
 
@@ -217,9 +232,11 @@ const FeedbackPage = ({ onBack }) => {
       next: 'ಮುಂದೆ',
       previous: 'ಹಿಂದೆ',
       submitFeedback: 'ಪ್ರತಿಕ್ರಿಯೆ ಸಲ್ಲಿಸಿ',
+      updateFeedback: 'ಪ್ರತಿಕ್ರಿಯೆ ನವೀಕರಿಸಿ',
       thankYou: 'ಧನ್ಯವಾದಗಳು!',
       shukran: 'ಶುಕ್ರಾನ್!',
       feedbackComplete: 'ಪ್ರತಿಕ್ರಿಯೆ ಪೂರ್ಣಗೊಂಡಿದೆ',
+      editingFeedback: 'ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಸಂಪಾದಿಸಲಾಗುತ್ತಿದೆ',
 
       // Personal info fields
       yourName: 'ನಿಮ್ಮ ಹೆಸರು *',
@@ -240,39 +257,43 @@ const FeedbackPage = ({ onBack }) => {
       // Options
       options: {
         overallExperience: [
-          'ಅತ್ಯಂತ ಪ್ರೇರಣಾದಾಯಕ ಮತ್ತು ಮರೆಯಲಾಗದ ಅನುಭವ 🌙',
-          'ಬಹಳ ಉತ್ತಮ — ಹೃದಯವನ್ನು ಸ್ಪರ್ಶಿಸಿತು ಮತ್ತು ಪ್ರವಾದಿಯ ﷺ ಪ್ರೀತಿ ಹೆಚ್ಚಿತು',
-          'ಉತ್ತಮ — ನನಗೆ ಇಷ್ಟವಾಯಿತು ಮತ್ತು ಕೆಲವು ಹೊಸದಾಗಿ ಕಲಿತೆ',
-          'ಸರಾಸರಿ — ಚೆನ್ನಾಗಿತ್ತು ಆದರೆ ಇನ್ನಷ್ಟು ಆಸಕ್ತಿದಾಯಕವಾಗಿರಬಹುದು',
-          'ಸರಿಯಾಗಿದೆ — ಸ್ವಲ್ಪ ಹೆಚ್ಚು ನಿರೀಕ್ಷಿಸಿದ್ದೆ',
+          'ಎಲ್ಲವೂ ಚೆನ್ನಾಗಿ ಪ್ರದರ್ಶಿಸಲ್ಪಟ್ಟಿದ್ದು ವೀಕ್ಷಿಸಲು ಯೋಗ್ಯವಾಗಿತ್ತು',
+          'ಪ್ರದರ್ಶನಗಳು ಆಸಕ್ತಿದಾಯಕವಾಗಿದ್ದು ಉಪಯುಕ್ತ ವಿಷಯಗಳನ್ನು ಕಲಿತೆನು',
+          'ಕೆಲವು ಭಾಗಗಳು ಮಾಹಿತಿ ನೀಡುವಂತಾಗಿತ್ತು ಮತ್ತು ಆಸ್ವಾದನೀಯವಾಗಿತ್ತು',
+          'ಕೆಲವು ವಿಭಾಗಗಳನ್ನು ಸ್ಪಷ್ಟತೆಗೆ ಸುಧಾರಿಸಬಹುದು',
+          'ವಿಷಯವು ನನ್ನ ನಿರೀಕ್ಷೆಗಳಿಗೆ ಹೊಂದಿಕೆಯಾಗಲಿಲ್ಲ',
         ],
+
         organization: [
-          'ಅತ್ಯುತ್ತಮವಾಗಿ ಆಯೋಜಿಸಲಾಗಿದೆ — ಎಲ್ಲವೂ ಸ್ಪಷ್ಟ ಮತ್ತು ಸುಲಭ 🌟',
-          'ಚೆನ್ನಾಗಿ ಆಯೋಜಿಸಲಾಗಿದೆ — ಸಣ್ಣ ವಿಳಂಬಗಳು ಮಾತ್ರ',
-          'ಸರಿಯಾಗಿ ಆಯೋಜಿಸಲಾಗಿದೆ — ಕೆಲವು ಭಾಗಗಳಲ್ಲಿ ಸುಧಾರಣೆ ಅಗತ್ಯ',
-          'ಸ್ವಲ್ಪ ಅಸಮರ್ಪಕ — ಕೆಲವು ತೊಂದರೆಗಳನ್ನು ಎದುರಿಸಬೇಕಾಯಿತು',
-          'ಅನಿಯೋಜಿತ — ಕೆಲವೆಡೆ ಗೊಂದಲ ಉಂಟಾಯಿತು',
+          'ಪ್ರವೇಶ, ನಿರ್ಗಮನ ಮತ್ತು ಮಾರ್ಗದರ್ಶನ ಎಲ್ಲಿಯೂ ಸ್ಪಷ್ಟವಾಗಿತ್ತು',
+          'ಬಹುತೇಕ ಸುಗಮವಾಗಿತ್ತು, ಸ್ವಲ್ಪ ವಿಳಂಬ ಅಥವಾ ಗೊಂದಲವಿತ್ತು',
+          'ಕೆಲವು ಪ್ರದೇಶಗಳಿಗೆ ಉತ್ತಮ ಸಂಯೋಜನೆಯ ಅಗತ್ಯವಿತ್ತು',
+          'ಮಾರ್ಗದರ್ಶನ ಅಥವಾ ಜನಸಾಗಣೆ ನಿರ್ವಹಣೆ ಸುಧಾರಿಸಬಹುದು',
+          'ರಚನೆ ಗೊಂದಲಮಯವಾಗಿತ್ತು ಮತ್ತು ಸಹಾಯವಿಲ್ಲದೆ ಇತ್ತು',
         ],
+
         movement: [
-          'ಎಲ್ಲಾ ಮಾದರಿಗಳನ್ನು ನೋಡಲು ತುಂಬಾ ಸುಲಭವಾಯಿತು 🚶‍♂️',
-          'ಸುಲಭ — ಕೆಲವು ಭಾಗಗಳಲ್ಲಿ ಸ್ವಲ್ಪ ಜನಸಮೂಹವಿತ್ತು',
-          'ನಿರ್ವಹಿಸಬಹುದಾದ — ಕೆಲವು ಕಡೆ ಸ್ವಲ್ಪ ಕಷ್ಟವಿತ್ತು',
-          'ಸ್ವಲ್ಪ ಕಷ್ಟ — ಜನರು ಹೆಚ್ಚು ಅಥವಾ ಜಾಗ ಕಡಿಮೆ',
-          'ಕಷ್ಟ — ಕೆಲವು ಮಾದರಿಗಳನ್ನು ಸರಿಯಾಗಿ ನೋಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ',
+          'ಎಲ್ಲಾ ವಿಭಾಗಗಳನ್ನು ಸುಲಭವಾಗಿ ನೋಡುವುದು ಮತ್ತು ನಡೆಯುವುದು ಸುಲಭವಾಗಿತ್ತು',
+          'ಬಹುತೇಕ ಸುಲಭ, ಸ್ವಲ್ಪ ಗದ್ದಲವಾದ ಸ್ಥಳಗಳು ಇದ್ದವು',
+          'ಕೆಲವು ಪ್ರದೇಶಗಳಲ್ಲಿ ನಡೆಯುವ ವೇಗ ನಿಧಾನವಾಗಿತ್ತು',
+          'ಕೆಲವು ವಿಭಾಗಗಳು ಗದ್ದಲ ಅಥವಾ ಸಣ್ಣವಾಗಿದ್ದವು',
+          'ಕೆಲವು ಪ್ರದರ್ಶನಗಳನ್ನು ನೋಡುವುದು ಮತ್ತು ನಡೆಯುವುದು ಕಷ್ಟವಾಗಿತ್ತು',
         ],
+
         learning: [
-          'ಪ್ರವಾದಿಯ ﷺ ಜೀವನ ಮತ್ತು ಸಂದೇಶದ ಬಗ್ಗೆ ಅನೇಕ ಹೊಸ ವಿಷಯಗಳನ್ನು ಕಲಿತೆ 📖',
-          'ಕೆಲವು ಹೊಸ ಪಾಠಗಳು ಮತ್ತು ನೆನಪುಗಳನ್ನು ಕಲಿತೆ',
-          'ಹಳೆಯ ವಿಷಯಗಳನ್ನು ಪುನರಾವರ್ತಿಸಿದೆ',
-          'ಹೊಸದಾಗಿ ಹೆಚ್ಚು ಕಲಿತಿಲ್ಲ — ದೃಶ್ಯರೂಪ ಹೆಚ್ಚು',
-          'ಹೊಸ ವಿಷಯ ಹೆಚ್ಚು ಇರಲಿಲ್ಲ ಆದರೆ ಆತ್ಮೀಯ ಅನುಭವವಾಯಿತು',
+          'ಸೀರಾ‌ನ ಪ್ರಮುಖ ಪಾಠಗಳನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಅರ್ಥಮಾಡಿಕೊಂಡೆನು',
+          'ಬಹುತೇಕ ಹೊಸ ಮತ್ತು ಉಪಯುಕ್ತ ವಿಷಯಗಳನ್ನು ಕಲಿತೆನು',
+          'ಕೆಲವು ಹೊಸ ವಿಷಯಗಳನ್ನು ಕಲಿತೆನು; ಬಹುತೇಕ ವಿಷಯ ತಿಳಿದಿತ್ತು',
+          'ಬಹುತೇಕ ದೃಶ್ಯಾತ್ಮಕ ಪ್ರದರ್ಶನ, ನಿರ್ಧಿಷ್ಟ ವಿವರಣೆ',
+          'ಹೊಸ ವಿಷಯ ಹೆಚ್ಚು ಕಲಿತಿಲ್ಲ, ಬಹುತೇಕ ಪುನರಾವೃತ್ತಿ',
         ],
+
         improvements: [
-          'ಪ್ರತಿ ಮಾದರಿಯ ಬಳಿ ವಿವರಣೆ ಬೋರ್ಡ್ ಅಥವಾ ಸಾರಾಂಶ ಸೇರಿಸಿ',
-          'ಕಥೆ ಹೇಳಲು ಚಿಕ್ಕ ವಿಡಿಯೋ ಅಥವಾ ಆಡಿಯೋ ಬಳಸಿ',
-          'ಹೆಚ್ಚು ಜಾಗ ಮತ್ತು ಸುಗಮ ಸಂಚಾರ ಒದಗಿಸಿ',
-          'ಮಕ್ಕಳಿಗಾಗಿ ಚಟುವಟಿಕೆಗಳು ಅಥವಾ ಪ್ರಶ್ನೋತ್ತರ ಸೇರಿಸಿ',
-          'ಎಲ್ಲವೂ ಅತ್ಯುತ್ತಮ — ಯಾವುದೇ ಬದಲಾವಣೆ ಅಗತ್ಯವಿಲ್ಲ 🌟',
+          'ಪ್ರದರ್ಶನಗಳ ಹತ್ತಿರ ಚಿಕ್ಕ ವೀಡಿಯೋಗಳು ಅಥವಾ ಧ್ವನಿ ವಿವರಣೆಗಳನ್ನು ಸೇರಿಸಿ',
+          'ಪ್ರತಿ ವಿಭಾಗಕ್ಕಾಗಿ ಸರಳ ಸಾರಾಂಶ ಫಲಕಗಳನ್ನು ಒದಗಿಸಿ',
+          'ಆಕರ್ಷಕ ಸ್ಥಳವನ್ನು ವಿಸ್ತರಿಸಿ ಮತ್ತು ಭೇಟಿ ಮಾಡುವವರ ಚಲನವಲನ ಸುಧಾರಿಸಿ',
+          'ಮಕ್ಕಳ ಕಲಿಕೆ ಅಥವಾ ಕ್ವಿಜ್ ಕೋಣೆಯನ್ನು ಸೇರಿಸಿ',
+          'ಯಾವುದೇ ಬದಲಾವಣೆ ಅಗತ್ಯವಿಲ್ಲ; ಎಲ್ಲವೂ ಚೆನ್ನಾಗಿ ಏರ್ಪಡಿಸಲಾಗಿದೆ',
         ],
       },
 
@@ -290,82 +311,88 @@ const FeedbackPage = ({ onBack }) => {
     },
     ru: {
       personalInfo: 'Zaati Maloomat',
-      shareExperience: 'Apna Tajurba Share Karein',
-      exhibitionFeedback: 'Namayish ki Feedback',
-      backToExhibition: 'Wapas Ghar Jayen',
+      shareExperience: 'Apna Tajurba Share Karo',
+      exhibitionFeedback: 'Namaysh ka Feedback',
+      backToExhibition: 'Wapas Ghar Chalein',
       step: 'Marhala',
       of: 'Mein se',
-      next: 'Agla',
-      previous: 'Pichla',
-      submitFeedback: 'Feedback Jama Karein',
+      next: 'Next',
+      previous: 'Previous',
+      submitFeedback: 'Feedback Jama Karo',
+      updateFeedback: 'Feedback Update Karo',
       thankYou: 'Shukriya!',
       shukran: 'Shukran!',
       feedbackComplete: 'Feedback Mukammal',
+      editingFeedback: 'Apni Feedback mein Thodi Tarmeem',
 
       // Personal info fields
       yourName: 'Aap ka Naam *',
-      placeFrom: 'Aap kahan se aaye hain? *',
+      placeFrom: 'Aap kahan se aaye the? *',
       mobileNumber: 'Mobile Number',
       emailAddress: 'Email Address',
-      professionType: 'Aap kya kaam karthe hai?',
+      professionType: 'Aap ka kaam kya hai?',
       accompanyingCount: 'Aap ke sath kitne log aaye? *',
 
       // Questions
       overallExperience: 'Apka overall experience kaisa raha?',
-      organization: 'Models kitne achi tarah pesh kiye gaye the?',
-      movement: 'Tamam models dekhne mein kitni asaani thi?',
-      learning: 'Aap exhibition mein se kya naya seekha?',
-      improvements: 'Aap kya feedback hai?',
+      organization: 'Models kitne acche tareeke se paish kiye gaye the?',
+      movement: 'Tamam models dekhne mein kitni aasanthi thi?',
+      learning: 'Aap exhibition se kya naya seekhe?',
+      improvements: 'Aap ka kya feedback hai?',
 
       // Options
       options: {
         overallExperience: [
-          'Bahut achcha raha - is ku bhool nahi sakte 🌙',
-          'Acha — dil ko chu gaya aur muhabbat-e-Nabi ﷺ barh gayi',
-          'Acha — kuch naya seekha aur maza aaya',
-          'Darmiyana — acha tha magar aur behtar ho sakta tha',
-          'Theek — thoda zyada umeed thi',
+          'Sab kuch achhi tarah paish hua aur dekhne layak tha',
+          'Namaysh dilchasp thi aur main ne kaam ki baatein seekhi',
+          'Kuch hisse maloomati aur mazedaar the',
+          'Kuch hisson ko wazahat ke liye thoda behtar kar sakte the',
+          'Mawad meri umeed ke mutabiq nahi tha',
         ],
+
         organization: [
-          'Intehai achi tarah munazzam — sab kuch wazeh aur asaan tha 🌟',
-          'Achi tarah munazzam — chhoti moti deri hui',
-          'Theek tha — kuch cheezon mein behtari ki zarurat hai',
-          'Kuch be-tarteebi thi — thodi mushkil hui',
-          'Munazzam nahi tha — kuch jagah uljhan mehsoos hui',
+          'Dakhla, khurooj aur rehnumai har jagah wazeh tha',
+          'Zyada tar smooth tha, kuch chhoti der ya thodi uljhan thi',
+          'Kuch jagah behtar tanzeem ki zarurat thi',
+          'Raste ya bheed ka intizam thoda behtar ho sakta tha',
+          'Layout uljha hua tha aur madad kam thi',
         ],
+
         movement: [
-          'Sab models dekhna bohat asaan tha 🚶‍♂️',
-          'Aasaan — kuch jagah thoda rush tha',
-          'Manageable — kuch jagah thoda tang tha',
-          'Thoda mushkil — jaga kam ya log zyada the',
-          'Mushkil — kuch models ache se nahi dekh saka',
+          'Sab hisse aaram se dekhne aur chalne me aasaan the',
+          'Zyada tar aasaan, kuch jagah bheed zyada thi',
+          'Kuch jagah chalne me dheemi speed thi',
+          'Kai hisse bheed ya tang the',
+          'Kuch displays dekhna aur chalna mushkil tha',
         ],
+
         learning: [
-          'Nabi ﷺ ki zindagi aur paigham ke bare mein bohat kuch naya seekha 📖',
-          'Kuch naye sabaq aur yaad dehani mili',
-          'Zyada tar wohi dohraya jo pehle se maloom tha',
-          'Naya kam seekha — zyada visual presentation thi',
-          'Naya zyada nahi seekha, magar roohani sukoon mila',
+          'Seerat ke aham sabaq ko achhi tarah samjha',
+          'Bohot si nai aur kaam ki baatein seekhi',
+          'Kuch nai baatein seekhi; zyada tar maloom content tha',
+          'Zyada tar visual thi, wazahat kam thi',
+          'Nai baatein zyada nahi seekhi, mostly review thi',
         ],
+
         improvements: [
-          'Har model ke paas chhoti wazahat ya summary lagai jaye',
-          'Kahani sunane ke liye chhoti video ya audio shamil karein',
-          'Zyada jaga aur behtar guzarne ka rasta banayein',
-          'Bachon ke liye activities ya quiz shamil karein',
-          'Sab kuch bohat acha tha — koi tabdeeli zaruri nahi 🌟',
+          'Displays ke paas chhoti videos ya audio explanations add karo',
+          'Har section ke liye simple summary board rakho',
+          'Jagah zyada karo aur visitor ki movement behtar karo',
+          'Bachchon ke liye learning ya quiz corner add karo',
+          'Koi tabdeeli nahi chahiye; sab kuch achhi tarah arrange tha',
         ],
       },
 
       finalThoughts: 'Aakhri Khayalat',
       thankYouMessage: 'Aap ke qeemati feedback ka shukriya!',
       successMessage:
-        'Aap ki raye se humein behtari mein madad milti hai. Allah aap ke jazbe ko qubool kare.',
+        'Aap ki raye se humein behtari mein madad milegi. Allah aap ke jazbe ko qubool kare.',
       note: 'Note',
       redirectNote: 'Aap ko jald hi home page par le jaya jayega...',
 
-      selectLanguage: 'Zabaan ka select karein',
+      selectLanguage: 'Zabaan select karo',
       english: 'English',
-      urdu: 'Roman Urdu',
+      urdu: 'Roman Dhakni Urdu',
       kannada: 'Kannada',
     },
   };
@@ -397,6 +424,86 @@ const FeedbackPage = ({ onBack }) => {
 
   const totalSteps = questions.length + 2; // +1 for personal info, +1 for overall comments
 
+  // Function to check for existing feedback
+  const checkExistingFeedback = async (language) => {
+    setLoading(true);
+    try {
+      const user_id = await generateUserID();
+
+      const { data, error } = await supabase
+        .from('exhibition_feedback')
+        .select('*')
+        .eq('user_id', user_id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 means no rows returned
+        console.error('Error fetching feedback:', error);
+        return false;
+      }
+
+      if (data) {
+        // Pre-populate form with existing data
+        setFormData({
+          name: data.name || '',
+          place: data.place || '',
+          mobile: data.mobile || '',
+          email: data.email || '',
+          professionType: data.professionType || '',
+          accompanyingCount: data.accompanying_count
+            ? data.accompanying_count.toString()
+            : '',
+
+          overallExperience: {
+            selected: data.overall_experience || '',
+            comment: data.overall_experience_comment || '',
+          },
+          organization: {
+            selected: data.organization || '',
+            comment: data.organization_comment || '',
+          },
+          movement: {
+            selected: data.movement || '',
+            comment: data.movement_comment || '',
+          },
+          learning: {
+            selected: data.learning || '',
+            comment: data.learning_comment || '',
+          },
+          improvements: {
+            selected: data.improvements || '',
+            comment: data.improvements_comment || '',
+          },
+
+          additionalComments: data.additional_comments || '',
+        });
+
+        setIsEditMode(true);
+        return true;
+      }
+
+      setIsEditMode(false);
+      return false;
+    } catch (error) {
+      console.error('Error checking existing feedback:', error);
+      setIsEditMode(false);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle language selection
+  const handleLanguageSelect = async (language) => {
+    setCurrentLanguage(language);
+
+    // Check for existing feedback
+    const hasExistingFeedback = await checkExistingFeedback(language);
+
+    // Move to next step regardless of whether feedback exists
+    setCurrentStep(1);
+  };
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -426,19 +533,12 @@ const FeedbackPage = ({ onBack }) => {
 
   const nextStep = () => {
     if (currentStep === 0) {
-      // Language selection step - no validation needed
-      setCurrentStep((prev) => prev + 1);
       return;
     }
 
     if (currentStep === 1) {
       // Validate personal info before proceeding
-      if (
-        !formData.name.trim() ||
-        !formData.place.trim() ||
-        !formData.professionType ||
-        !formData.accompanyingCount
-      ) {
+      if (!formData.name.trim() || !formData.place.trim()) {
         alert(
           currentLanguage === 'en'
             ? 'Please provide all required information'
@@ -482,11 +582,12 @@ const FeedbackPage = ({ onBack }) => {
     try {
       // Prepare data for submission
       const submissionData = {
+        user_id: await generateUserID(),
         name: formData.name,
         place: formData.place,
         mobile: formData.mobile,
         email: formData.email,
-        accompanying_type: formData.professionType,
+        professionType: formData.professionType,
         accompanying_count: parseInt(formData.accompanyingCount),
 
         // Questions - store in English
@@ -503,16 +604,19 @@ const FeedbackPage = ({ onBack }) => {
 
         additional_comments: formData.additionalComments,
         submitted_at: new Date().toISOString(),
-        submission_source: 'web',
         submission_language: currentLanguage,
       };
 
-      // Submit to Supabase
+      // Use upsert to handle both insert and update
       const { data, error } = await supabase
         .from('exhibition_feedback')
-        .insert([submissionData]);
+        .upsert([submissionData], {
+          onConflict: 'user_id',
+          ignoreDuplicates: false,
+        });
 
       if (error) {
+        console.log('Error submitting feedback:', error);
         throw error;
       }
 
@@ -541,16 +645,6 @@ const FeedbackPage = ({ onBack }) => {
     return ((currentStep + 1) / (totalSteps + 1)) * 100; // +1 for language selection step
   };
 
-  const getStepTitle = () => {
-    if (currentStep === 0) return translations.en.selectLanguage;
-    if (currentStep === 1) return t.personalInfo;
-    if (currentStep === totalSteps) return t.finalThoughts;
-    if (currentStep > 1 && currentStep <= questions.length + 1) {
-      return questions[currentStep - 2].question;
-    }
-    return 'Feedback';
-  };
-
   // Language Selection Step
   if (currentStep === 0) {
     return (
@@ -562,45 +656,46 @@ const FeedbackPage = ({ onBack }) => {
           </h1>
           <p className="text-gray-600 mb-8">Select your preferred language</p>
 
+          {loading && (
+            <div className="mb-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+              <p className="text-sm text-gray-600 mt-2">
+                Checking for existing feedback...
+              </p>
+            </div>
+          )}
+
           <div className="space-y-4">
             <button
-              onClick={() => {
-                setCurrentLanguage('en');
-                setCurrentStep(1);
-              }}
-              className="w-full bg-emerald-600 text-white py-4 px-6 rounded-xl hover:bg-emerald-700 transition font-semibold text-lg"
+              onClick={() => handleLanguageSelect('en')}
+              disabled={loading}
+              className="w-full bg-emerald-600 text-white py-4 px-6 rounded-xl hover:bg-emerald-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {translations.en.english}
             </button>
 
             <button
-              onClick={() => {
-                setCurrentLanguage('ru');
-                setCurrentStep(1);
-              }}
-              className="w-full bg-pink-600 text-white py-4 px-6 rounded-xl hover:bg-pink-700 transition font-semibold text-lg"
+              onClick={() => handleLanguageSelect('ru')}
+              disabled={loading}
+              className="w-full bg-pink-600 text-white py-4 px-6 rounded-xl hover:bg-pink-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ direction: 'rtl' }}
             >
               {translations.ru.urdu}
             </button>
 
             <button
-              onClick={() => {
-                setCurrentLanguage('ur');
-                setCurrentStep(1);
-              }}
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl hover:bg-blue-700 transition font-semibold text-lg"
+              onClick={() => handleLanguageSelect('ur')}
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl hover:bg-blue-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ direction: 'rtl' }}
             >
               {translations.ur.urdu}
             </button>
 
             <button
-              onClick={() => {
-                setCurrentLanguage('kn');
-                setCurrentStep(1);
-              }}
-              className="w-full bg-purple-600 text-white py-4 px-6 rounded-xl hover:bg-purple-700 transition font-semibold text-lg"
+              onClick={() => handleLanguageSelect('kn')}
+              disabled={loading}
+              className="w-full bg-purple-600 text-white py-4 px-6 rounded-xl hover:bg-purple-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {translations.kn.kannada}
             </button>
@@ -647,6 +742,12 @@ const FeedbackPage = ({ onBack }) => {
             <span className="text-sm font-medium text-gray-700">
               {t.step} {currentStep} {t.of} {totalSteps}
             </span>
+            {isEditMode && (
+              <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full flex items-center">
+                <Edit size={14} className="mr-1" />
+                {t.editingFeedback}
+              </span>
+            )}
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
@@ -660,12 +761,30 @@ const FeedbackPage = ({ onBack }) => {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+          {/* Header with edit mode indicator */}
+          {isEditMode && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div className="flex items-center">
+                <Edit size={20} className="text-emerald-600 mr-2" />
+                <p className="text-emerald-700 font-medium">
+                  {currentLanguage === 'en'
+                    ? 'Editing your existing feedback'
+                    : currentLanguage === 'ur'
+                    ? 'آپ اپنی موجودہ رائے میں ترمیم کر رہے ہیں'
+                    : currentLanguage === 'kn'
+                    ? 'ನಿಮ್ಮ ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಸಂಪಾದಿಸಲಾಗುತ್ತಿದೆ'
+                    : 'Aap apni mojooda feedback mein tarmeem kar rahe hain'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Personal Information Step */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                  {t.shareExperience}
+                  {isEditMode ? t.editingFeedback : t.shareExperience}
                 </h2>
               </div>
 
@@ -706,7 +825,7 @@ const FeedbackPage = ({ onBack }) => {
                       handleInputChange('professionType', e.target.value)
                     }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  ></input>
+                  />
                 </div>
 
                 <div>
@@ -762,9 +881,6 @@ const FeedbackPage = ({ onBack }) => {
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">
                   {questions[currentStep - 2].question}
                 </h2>
-                <p className="text-gray-600">
-                  {questions[currentStep - 2].description}
-                </p>
               </div>
 
               <div className="space-y-4 mb-6">
@@ -865,8 +981,17 @@ const FeedbackPage = ({ onBack }) => {
               onClick={handleSubmit}
               className="flex items-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition"
             >
-              <Send size={20} className="mr-2" />
-              {t.submitFeedback}
+              {isEditMode ? (
+                <>
+                  <Edit size={20} className="mr-2" />
+                  {t.updateFeedback}
+                </>
+              ) : (
+                <>
+                  <Send size={20} className="mr-2" />
+                  {t.submitFeedback}
+                </>
+              )}
             </button>
           )}
         </div>

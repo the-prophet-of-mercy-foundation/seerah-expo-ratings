@@ -3,7 +3,11 @@ import { AlertCircle, CheckCircle, Star } from 'lucide-react';
 import StarRating from './StartRating';
 import { generateUserID } from '../../lib/supabaseClient';
 import { getModels } from '../../lib/modelsApi';
-import { checkIfAlreadyRated, submitRating } from '../../lib/ratingUtils';
+import {
+  checkIfAlreadyRated,
+  submitRating,
+  updateModelVisited,
+} from '../../lib/ratingUtils';
 
 /* ----------------------------- RatingForm Component ----------------------------- */
 const RatingForm = ({ modelNumber, onSuccess }) => {
@@ -26,7 +30,7 @@ const RatingForm = ({ modelNumber, onSuccess }) => {
       success: 'Your rating has been submitted successfully!',
       loading: 'Loading...',
       modelNotFound: 'Model Not Found',
-      viewDashboard: 'View Model Ratings',
+      viewModels: 'View Models',
     },
     ur: {
       title: 'اس ماڈل کی درجہ بندی کریں',
@@ -38,7 +42,7 @@ const RatingForm = ({ modelNumber, onSuccess }) => {
       success: 'آپ کی درجہ بندی کامیابی سے جمع ہوگئی!',
       loading: 'لوڈ ہو رہا ہے...',
       modelNotFound: 'ماڈل نہیں ملا',
-      viewDashboard: 'ڈیش بورڈ دیکھیں',
+      viewModels: 'ڈیش بورڈ دیکھیں',
     },
     kn: {
       title: 'ಈ ಮಾದರಿಗೆ ರೇಟ್ ಮಾಡಿ',
@@ -50,7 +54,7 @@ const RatingForm = ({ modelNumber, onSuccess }) => {
       success: 'ನಿಮ್ಮ ರೇಟಿಂಗ್ ಯಶಸ್ವಿಯಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ!',
       loading: 'ಲೋಡ್ ಆಗುತ್ತಿದೆ...',
       modelNotFound: 'ಮಾದರಿ ಕಂಡುಬಂದಿಲ್ಲ',
-      viewDashboard: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ನೋಡಿ',
+      viewModels: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ನೋಡಿ',
     },
   };
 
@@ -84,6 +88,7 @@ const RatingForm = ({ modelNumber, onSuccess }) => {
       comments: comments || null,
     };
     await submitRating(ratingData);
+    updateModelVisited(ratingData.model_number);
 
     setSubmitting(false);
     setAlreadyRated(true);
@@ -119,10 +124,10 @@ const RatingForm = ({ modelNumber, onSuccess }) => {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">{t.thanks}</h2>
           <p className="text-gray-600 mb-4">{t.alreadyRated}</p>
           <button
-            onClick={() => (window.location.href = '/dashboard')}
+            onClick={() => (window.location.href = '/models')}
             className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition"
           >
-            {t.viewDashboard}
+            {t.viewModels}
           </button>
         </div>
       </div>

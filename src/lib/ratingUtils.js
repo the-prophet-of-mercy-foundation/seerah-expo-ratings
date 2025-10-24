@@ -91,3 +91,20 @@ const isModelAlreadyRated = async (modelNumber) => {
   );
   return alreadyRated;
 };
+
+export const updateModelVisited = (modelNumber) => {
+  try {
+    const modelsCache = localStorage.getItem('modelsCache');
+    if (!modelsCache) {
+      console.warn('No modelsCache found in localStorage');
+      return;
+    }
+    const models = JSON.parse(modelsCache);
+    const updatedModels = models.map((model) =>
+      model.model_number === modelNumber ? { ...model, visited: 1 } : model,
+    );
+    localStorage.setItem('modelsCache', JSON.stringify(updatedModels));
+  } catch (error) {
+    console.log('Error updating model visited status:', error);
+  }
+};
