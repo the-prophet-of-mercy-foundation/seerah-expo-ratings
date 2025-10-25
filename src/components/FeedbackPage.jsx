@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Send, CheckCircle, Edit } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
-import { generateUserID } from '../lib/supabaseClient';
+import { supabase, generateUserID } from '../lib/supabaseClient';
 
 const FeedbackPage = ({ onBack }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -10,37 +9,22 @@ const FeedbackPage = ({ onBack }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    // Personal Information
+    // Personal Information (required fields)
     name: '',
     place: '',
+    professionType: '',
+
+    // Questions with selections only (no comments)
+    overallExperience: '',
+    organization: '',
+    movement: '',
+    learning: '',
+    improvements: '',
+
+    // Additional information and comments
     mobile: '',
     email: '',
-    professionType: '',
     accompanyingCount: '',
-
-    // Questions with individual comments
-    overallExperience: {
-      selected: '',
-      comment: '',
-    },
-    organization: {
-      selected: '',
-      comment: '',
-    },
-    movement: {
-      selected: '',
-      comment: '',
-    },
-    learning: {
-      selected: '',
-      comment: '',
-    },
-    improvements: {
-      selected: '',
-      comment: '',
-    },
-
-    // Overall additional comments
     additionalComments: '',
   });
 
@@ -65,10 +49,12 @@ const FeedbackPage = ({ onBack }) => {
       // Personal info fields
       yourName: 'Your Name *',
       placeFrom: "Place you're from *",
+      professionType: 'What is your profession?',
+
+      // Additional info fields (moved to last section)
       mobileNumber: 'Mobile Number',
       emailAddress: 'Email Address',
-      professionType: 'What is your profession?',
-      accompanyingCount: 'How many people accompanied you? *',
+      accompanyingCount: 'How many people accompanied you?',
 
       // Questions
       overallExperience: 'Describe your overall experience',
@@ -116,13 +102,14 @@ const FeedbackPage = ({ onBack }) => {
           'Add short videos or audio explanations near displays',
           'Provide simple summary boards for each section',
           'Increase space and improve visitor movement',
-          'Include a children’s learning or quiz corner',
+          "Include a children's learning or quiz corner",
           'No changes needed; everything was well arranged',
         ],
       },
 
       // Additional text
-      finalThoughts: 'Final Thoughts',
+      finalThoughts: 'Final Thoughts & Additional Information',
+      additionalComments: 'Any other feedback or suggestions...',
       thankYouMessage: 'Thank you for your valuable feedback!',
       successMessage:
         'Your feedback helps us improve and serve the community better. May Allah accept your efforts and bless you.',
@@ -130,6 +117,7 @@ const FeedbackPage = ({ onBack }) => {
       redirectNote: 'You will be redirected to the home page shortly...',
 
       // Language selection
+
       selectLanguage: 'Select Language',
       english: 'English',
       urdu: 'Urdu',
@@ -154,10 +142,12 @@ const FeedbackPage = ({ onBack }) => {
       // Personal info fields
       yourName: 'آپ کا نام *',
       placeFrom: 'آپ کہاں سے آئے ہیں؟ *',
+      professionType: 'آپ کا پیشہ کیا ہے؟',
+
+      // Additional info fields (moved to last section)
       mobileNumber: 'موبائل نمبر',
       emailAddress: 'ای میل پتہ',
-      professionType: 'آپ کا پیشہ کیا ہے؟',
-      accompanyingCount: 'آپ کے ساتھ کتنے لوگ آئے؟ *',
+      accompanyingCount: 'آپ کے ساتھ کتنے لوگ آئے؟',
 
       // Questions
       overallExperience: 'اپنے مجموعی تجربے کی وضاحت کریں',
@@ -209,7 +199,8 @@ const FeedbackPage = ({ onBack }) => {
         ],
       },
 
-      finalThoughts: 'آخری خیالات',
+      finalThoughts: 'آخری خیالات اور اضافی معلومات',
+      additionalComments: 'کوئی دوسری رائے یا تجاویز...',
       thankYouMessage: 'آپ کے قیمتی تاثرات کا شکریہ!',
       successMessage:
         'آپ کی رائے سے ہمیں بہتری میں مدد ملتی ہے۔ اللہ آپ کے جذبے کو قبول فرمائے۔',
@@ -241,10 +232,12 @@ const FeedbackPage = ({ onBack }) => {
       // Personal info fields
       yourName: 'ನಿಮ್ಮ ಹೆಸರು *',
       placeFrom: 'ನೀವು ಯಾವ ಸ್ಥಳದಿಂದ ಬಂದಿದ್ದೀರಿ? *',
+      professionType: 'ನಿಮ್ಮ ವೃತ್ತಿ ಏನು?',
+
+      // Additional info fields (moved to last section)
       mobileNumber: 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ',
       emailAddress: 'ಇಮೇಲ್ ವಿಳಾಸ',
-      professionType: 'ನಿಮ್ಮ ವೃತ್ತಿ ಏನು?',
-      accompanyingCount: 'ನಿಮ್ಮ ಜೊತೆ ಎಷ್ಟು ಜನರು ಬಂದಿದ್ದರು? *',
+      accompanyingCount: 'ನಿಮ್ಮ ಜೊತೆ ಎಷ್ಟು ಜನರು ಬಂದಿದ್ದರು?',
 
       // Questions
       overallExperience: 'ನಿಮ್ಮ ಒಟ್ಟು ಅನುಭವವನ್ನು ವಿವರಿಸಿ',
@@ -297,7 +290,8 @@ const FeedbackPage = ({ onBack }) => {
         ],
       },
 
-      finalThoughts: 'ಕೊನೆಯ ಆಲೋಚನೆಗಳು',
+      finalThoughts: 'ಕೊನೆಯ ಆಲೋಚನೆಗಳು ಮತ್ತು ಹೆಚ್ಚುವರಿ ಮಾಹಿತಿ',
+      additionalComments: 'ಯಾವುದೇ ಇತರ ಪ್ರತಿಕ್ರಿಯೆ ಅಥವಾ ಸಲಹೆಗಳು...',
       thankYouMessage: 'ನಿಮ್ಮ ಅಮೂಲ್ಯ ಪ್ರತಿಕ್ರಿಯೆಗೆ ಧನ್ಯವಾದಗಳು!',
       successMessage:
         'ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆಯಿಂದ ನಾವು ಇನ್ನಷ್ಟು ಉತ್ತಮವಾಗಿ ಸೇವೆ ಮಾಡಬಹುದು. ಅಲ್ಲಾಹ್ ನಿಮ್ಮ ಪ್ರಯತ್ನಗಳನ್ನು ಆಶೀರ್ವದಿಸಲಿ.',
@@ -318,20 +312,22 @@ const FeedbackPage = ({ onBack }) => {
       of: 'Mein se',
       next: 'Next',
       previous: 'Previous',
-      submitFeedback: 'Feedback Jama Karo',
+      submitFeedback: 'Feedback Submit Karo',
       updateFeedback: 'Feedback Update Karo',
       thankYou: 'Shukriya!',
       shukran: 'Shukran!',
-      feedbackComplete: 'Feedback Mukammal',
-      editingFeedback: 'Apni Feedback mein Thodi Tarmeem',
+      feedbackComplete: 'Feedback Mukammal Hogaya',
+      editingFeedback: 'Feedback Edit Karna',
 
       // Personal info fields
       yourName: 'Aap ka Naam *',
       placeFrom: 'Aap kahan se aaye the? *',
+      professionType: 'Aap ka kaam kya hai?',
+
+      // Additional info fields (moved to last section)
       mobileNumber: 'Mobile Number',
       emailAddress: 'Email Address',
-      professionType: 'Aap ka kaam kya hai?',
-      accompanyingCount: 'Aap ke sath kitne log aaye? *',
+      accompanyingCount: 'Aap ke sath kitne log aaye?',
 
       // Questions
       overallExperience: 'Apka overall experience kaisa raha?',
@@ -343,19 +339,19 @@ const FeedbackPage = ({ onBack }) => {
       // Options
       options: {
         overallExperience: [
-          'Sab kuch achhi tarah paish hua aur dekhne layak tha',
-          'Namaysh dilchasp thi aur main ne kaam ki baatein seekhi',
+          'Sab kuch achhi tarah dikhaya gaya tha aur dhekne ke laiq tha',
+          'Models dilchasp thi aur faydemand baatein seekha',
           'Kuch hisse maloomati aur mazedaar the',
-          'Kuch hisson ko wazahat ke liye thoda behtar kar sakte the',
+          'Kuch hisson ka explanation thoda behtar kar sakte the',
           'Mawad meri umeed ke mutabiq nahi tha',
         ],
 
         organization: [
-          'Dakhla, khurooj aur rehnumai har jagah wazeh tha',
-          'Zyada tar smooth tha, kuch chhoti der ya thodi uljhan thi',
-          'Kuch jagah behtar tanzeem ki zarurat thi',
-          'Raste ya bheed ka intizam thoda behtar ho sakta tha',
-          'Layout uljha hua tha aur madad kam thi',
+          'Entry, exit aur rehnumai achi tharah kiye the',
+          'Zyada tar smooth tha, thodi der ke liye confusion tha',
+          'Kuch jagah aur better coordination ki zarurat thi',
+          'Rastha dhikana aur bheed ku samal na aur behthar hosak tha hai',
+          'Direction bahut confusing tha aur madad nahi thi',
         ],
 
         movement: [
@@ -367,11 +363,11 @@ const FeedbackPage = ({ onBack }) => {
         ],
 
         learning: [
-          'Seerat ke aham sabaq ko achhi tarah samjha',
-          'Bohot si nai aur kaam ki baatein seekhi',
-          'Kuch nai baatein seekhi; zyada tar maloom content tha',
-          'Zyada tar visual thi, wazahat kam thi',
-          'Nai baatein zyada nahi seekhi, mostly review thi',
+          'Bahut malumaath haasil hua aur achcha samaj aya',
+          'Nayi zaroori bathe malum hue',
+          'Kuch nayi baaqi seekhi, zyada tar maloom cheezen thi',
+          'Zyada tar visual thi, explain karne me kami thi',
+          'Nayi baatein zyada nahi seekhi, mostly review thi',
         ],
 
         improvements: [
@@ -383,7 +379,8 @@ const FeedbackPage = ({ onBack }) => {
         ],
       },
 
-      finalThoughts: 'Aakhri Khayalat',
+      finalThoughts: 'Aakhri Khayalat aur Zyada Maloomat',
+      additionalComments: 'Koi aur feedback ya suggestions...',
       thankYouMessage: 'Aap ke qeemati feedback ka shukriya!',
       successMessage:
         'Aap ki raye se humein behtari mein madad milegi. Allah aap ke jazbe ko qubool kare.',
@@ -422,7 +419,7 @@ const FeedbackPage = ({ onBack }) => {
     },
   ];
 
-  const totalSteps = questions.length + 2; // +1 for personal info, +1 for overall comments
+  const totalSteps = questions.length + 2; // +1 for personal info, +1 for additional info & comments
 
   // Function to check for existing feedback
   const checkExistingFeedback = async (language) => {
@@ -430,56 +427,44 @@ const FeedbackPage = ({ onBack }) => {
     try {
       const user_id = await generateUserID();
 
-      const { data, error } = await supabase
-        .from('exhibition_feedback')
-        .select('*')
-        .eq('user_id', user_id)
-        .single();
+      if (localStorage.getItem(user_id + 'feedback_submitted') === 'true') {
+        // If feedback was already submitted in this browser, skip fetching
+        const { data, error } = await supabase
+          .from('exhibition_feedback')
+          .select('*')
+          .eq('user_id', user_id)
+          .single();
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 means no rows returned
-        console.error('Error fetching feedback:', error);
-        return false;
-      }
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 means no rows returned
+          console.error('Error fetching feedback:', error);
+          return false;
+        }
+        if (data) {
+          // Pre-populate form with existing data
+          setFormData({
+            name: data.name || '',
+            place: data.place || '',
+            professionType: data.professionType || '',
+            mobile: data.mobile || '',
+            email: data.email || '',
+            accompanyingCount: data.accompanying_count
+              ? data.accompanying_count.toString()
+              : '',
 
-      if (data) {
-        // Pre-populate form with existing data
-        setFormData({
-          name: data.name || '',
-          place: data.place || '',
-          mobile: data.mobile || '',
-          email: data.email || '',
-          professionType: data.professionType || '',
-          accompanyingCount: data.accompanying_count
-            ? data.accompanying_count.toString()
-            : '',
+            // Questions - only selected values, no comments
+            overallExperience: data.overall_experience || '',
+            organization: data.organization || '',
+            movement: data.movement || '',
+            learning: data.learning || '',
+            improvements: data.improvements || '',
 
-          overallExperience: {
-            selected: data.overall_experience || '',
-            comment: data.overall_experience_comment || '',
-          },
-          organization: {
-            selected: data.organization || '',
-            comment: data.organization_comment || '',
-          },
-          movement: {
-            selected: data.movement || '',
-            comment: data.movement_comment || '',
-          },
-          learning: {
-            selected: data.learning || '',
-            comment: data.learning_comment || '',
-          },
-          improvements: {
-            selected: data.improvements || '',
-            comment: data.improvements_comment || '',
-          },
+            additionalComments: data.additional_comments || '',
+          });
 
-          additionalComments: data.additional_comments || '',
-        });
-
-        setIsEditMode(true);
-        return true;
+          setIsEditMode(true);
+          return true;
+        }
       }
 
       setIsEditMode(false);
@@ -514,20 +499,7 @@ const FeedbackPage = ({ onBack }) => {
   const handleOptionSelect = (questionId, option) => {
     setFormData((prev) => ({
       ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        selected: option,
-      },
-    }));
-  };
-
-  const handleCommentChange = (questionId, comment) => {
-    setFormData((prev) => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        comment: comment,
-      },
+      [questionId]: option,
     }));
   };
 
@@ -553,7 +525,7 @@ const FeedbackPage = ({ onBack }) => {
     if (currentStep > 1 && currentStep <= questions.length + 1) {
       // Validate that a selection was made for the current question
       const currentQuestion = questions[currentStep - 2];
-      if (!formData[currentQuestion.id].selected) {
+      if (!formData[currentQuestion.id]) {
         alert(
           currentLanguage === 'en'
             ? `Please select an option for "${currentQuestion.question}"`
@@ -585,22 +557,19 @@ const FeedbackPage = ({ onBack }) => {
         user_id: await generateUserID(),
         name: formData.name,
         place: formData.place,
+        professionType: formData.professionType,
         mobile: formData.mobile,
         email: formData.email,
-        professionType: formData.professionType,
-        accompanying_count: parseInt(formData.accompanyingCount),
+        accompanying_count: formData.accompanyingCount
+          ? parseInt(formData.accompanyingCount)
+          : null,
 
-        // Questions - store in English
-        overall_experience: formData.overallExperience.selected,
-        overall_experience_comment: formData.overallExperience.comment,
-        organization: formData.organization.selected,
-        organization_comment: formData.organization.comment,
-        movement: formData.movement.selected,
-        movement_comment: formData.movement.comment,
-        learning: formData.learning.selected,
-        learning_comment: formData.learning.comment,
-        improvements: formData.improvements.selected,
-        improvements_comment: formData.improvements.comment,
+        // Questions - store selections only (no comments)
+        overall_experience: formData.overallExperience,
+        organization: formData.organization,
+        movement: formData.movement,
+        learning: formData.learning,
+        improvements: formData.improvements,
 
         additional_comments: formData.additionalComments,
         submitted_at: new Date().toISOString(),
@@ -615,18 +584,17 @@ const FeedbackPage = ({ onBack }) => {
           ignoreDuplicates: false,
         });
 
-      if (error) {
-        console.log('Error submitting feedback:', error);
-        throw error;
-      }
+      localStorage.setItem(
+        submissionData.user_id + 'feedback_submitted',
+        'true',
+      );
 
-      console.log('Feedback submitted successfully:', data);
       setSubmitted(true);
 
       // Auto-redirect after 5 seconds
       setTimeout(() => {
         if (onBack) onBack();
-      }, 5000);
+      }, 2000);
     } catch (error) {
       console.error('Error submitting feedback:', error);
       alert(
@@ -815,7 +783,7 @@ const FeedbackPage = ({ onBack }) => {
                   />
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     {t.professionType}
                   </label>
@@ -825,49 +793,6 @@ const FeedbackPage = ({ onBack }) => {
                       handleInputChange('professionType', e.target.value)
                     }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {t.accompanyingCount}
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.accompanyingCount}
-                    onChange={(e) =>
-                      handleInputChange('accompanyingCount', e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {t.mobileNumber}
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.mobile}
-                    onChange={(e) =>
-                      handleInputChange('mobile', e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    placeholder="Optional"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {t.emailAddress}
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    placeholder="Optional"
                   />
                 </div>
               </div>
@@ -895,8 +820,7 @@ const FeedbackPage = ({ onBack }) => {
                         )
                       }
                       className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                        formData[questions[currentStep - 2].id].selected ===
-                        option
+                        formData[questions[currentStep - 2].id] === option
                           ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm'
                           : 'border-gray-200 bg-white hover:border-emerald-300 hover:bg-emerald-25'
                       }`}
@@ -904,13 +828,12 @@ const FeedbackPage = ({ onBack }) => {
                       <div className="flex items-center">
                         <div
                           className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 ${
-                            formData[questions[currentStep - 2].id].selected ===
-                            option
+                            formData[questions[currentStep - 2].id] === option
                               ? 'border-emerald-500 bg-emerald-500'
                               : 'border-gray-300'
                           }`}
                         >
-                          {formData[questions[currentStep - 2].id].selected ===
+                          {formData[questions[currentStep - 2].id] ===
                             option && (
                             <div className="w-2 h-2 rounded-full bg-white" />
                           )}
@@ -924,30 +847,73 @@ const FeedbackPage = ({ onBack }) => {
             </div>
           )}
 
-          {/* Overall Additional Comments Step */}
+          {/* Additional Information & Comments Step */}
           {currentStep === totalSteps && (
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">
                   {t.finalThoughts}
                 </h2>
+                <p className="text-gray-600">{t.additionalComments}</p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    {t.mobileNumber}
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.mobile}
+                    onChange={(e) =>
+                      handleInputChange('mobile', e.target.value)
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    {t.emailAddress}
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    {t.accompanyingCount}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.accompanyingCount}
+                    onChange={(e) =>
+                      handleInputChange('accompanyingCount', e.target.value)
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    placeholder="Optional"
+                  />
+                </div>
               </div>
 
               <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {t.additionalComments}
+                </label>
                 <textarea
                   value={formData.additionalComments}
                   onChange={(e) =>
                     handleInputChange('additionalComments', e.target.value)
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  placeholder={
-                    currentLanguage === 'en'
-                      ? "Any other feedback, suggestions, or experiences you'd like to share..."
-                      : currentLanguage === 'ur'
-                      ? 'کوئی دوسری رائے، تجاویز یا تجربات جو آپ شیئر کرنا چاہیں...'
-                      : 'ನೀವು ಹಂಚಿಕೊಳ್ಳಲು ಬಯಸುವ ಯಾವುದೇ ಇತರ ಪ್ರತಿಕ್ರಿಯೆ, ಸಲಹೆಗಳು ಅಥವಾ ಅನುಭವಗಳು...'
-                  }
-                  rows={8}
+                  rows={4}
                 />
               </div>
             </div>

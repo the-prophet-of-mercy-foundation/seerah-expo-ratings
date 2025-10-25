@@ -33,11 +33,6 @@ const App = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const type = urlParams.get('type');
       const accessToken = urlParams.get('access_token');
-      console.log('App initialized with URL params:', {
-        type,
-        accessToken,
-        urlParams,
-      });
 
       if (type === 'recovery' && accessToken) {
         console.log('Reset token found on app load');
@@ -74,10 +69,6 @@ const App = () => {
       const urlParams = new URLSearchParams(search);
       const type = urlParams.get('type');
       const accessToken = urlParams.get('email');
-      console.log('Location changed with URL params:', {
-        type,
-        accessToken,
-      });
       if (type === 'recovery') {
         setShowResetModal(true);
         return;
