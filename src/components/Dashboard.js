@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Children } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import {
   BarChart,
@@ -59,6 +59,16 @@ const Dashboard = () => {
   ];
 
   // Gradient colors for charts
+  const mixedTheme = [
+    { id: 'mixed1', colors: ['#1a2980', '#26d0ce'] },
+    { id: 'mixed2', colors: ['#ff7e5f', '#feb47b'] },
+    { id: 'mixed3', colors: ['#134e5e', '#71b280'] },
+    { id: 'mixed4', colors: ['#8e2de2', '#4a00e0'] },
+    { id: 'mixed5', colors: ['#a1c4fd', '#c2e9fb'] },
+    { id: 'mixed6', colors: ['#4776e6', '#8e54e9'] },
+    { id: 'mixed7', colors: ['#ff6a00', '#ee0979'] },
+    { id: 'mixed8', colors: ['#56ab2f', '#a8e6cf'] },
+  ];
 
   const oceanTheme = [
     { id: 'ocean1', colors: ['#1a2980', '#26d0ce'] },
@@ -71,94 +81,7 @@ const Dashboard = () => {
     { id: 'ocean8', colors: ['#4ca1af', '#2c3e50'] },
   ];
 
-  const forestTheme = [
-    { id: 'forest1', colors: ['#134e5e', '#71b280'] },
-    { id: 'forest2', colors: ['#3a7bd5', '#00d2ff'] },
-    { id: 'forest3', colors: ['#56ab2f', '#a8e6cf'] },
-    { id: 'forest4', colors: ['#2e8b57', '#87ceeb'] },
-    { id: 'forest5', colors: ['#1d976c', '#93f9b9'] },
-    { id: 'forest6', colors: ['#283c86', '#45a247'] },
-    { id: 'forest7', colors: ['#4da0ff', '#d39d38'] },
-    { id: 'forest8', colors: ['#348f50', '#56b4d3'] },
-  ];
-
-  const mixedTheme = [
-    { id: 'mixed1', colors: ['#1a2980', '#26d0ce'] },
-    { id: 'mixed2', colors: ['#ff7e5f', '#feb47b'] },
-    { id: 'mixed3', colors: ['#134e5e', '#71b280'] },
-    { id: 'mixed4', colors: ['#8e2de2', '#4a00e0'] },
-    { id: 'mixed5', colors: ['#a1c4fd', '#c2e9fb'] },
-    { id: 'mixed6', colors: ['#4776e6', '#8e54e9'] },
-    { id: 'mixed7', colors: ['#ff6a00', '#ee0979'] },
-    { id: 'mixed8', colors: ['#56ab2f', '#a8e6cf'] },
-  ];
-
-  // Fixed Green to Blue gradient colors for treemap
-  const G2BColors1 = [
-    '#002f00ff', // Darkest green
-    '#0e480eff', // Dark green
-    '#006a00ff', // Green
-    '#3f763fff', // Forest green
-    '#058247ff', // Lime green
-    '#068753ff', // Lawn green
-    '#568f00ff', // Green yellow
-    '#7f8600ff', // Yellow green
-    '#00ced1', // Dark turquoise
-    '#20b2aa', // Light sea green
-    '#40e0d0', // Turquoise
-    '#00ffff', // Aqua/Cyan
-    '#87ceeb', // Sky blue
-    '#87cefa', // Light sky blue
-    '#b0e0e6', // Powder blue
-  ];
-
-  const G2BColors2 = [
-    '#004d26',
-    '#005233',
-    '#005740',
-    '#005c4d',
-    '#006159',
-    '#006666',
-    '#006c73',
-    '#007280',
-    '#00778c',
-    '#007d99',
-    '#0083a6',
-    '#0088b3',
-    '#008ebf',
-    '#0094cc',
-    '#0099d9',
-    '#009fe6',
-    '#00a6e6',
-    '#00ace0',
-    '#00b3d9',
-    '#00b8cc',
-  ];
-
-  const G2BColors3 = [
-    '#003300',
-    '#0a3f00',
-    '#144a00',
-    '#1e5500',
-    '#296000',
-    '#336600',
-    '#3f7300',
-    '#4a8000',
-    '#558c00',
-    '#669900',
-    '#4f9900',
-    '#339966',
-    '#268c73',
-    '#1a807f',
-    '#0d738c',
-    '#006680',
-    '#006673',
-    '#005c66',
-    '#005259',
-    '#00474d',
-  ];
-
-  const G2BColors4 = [
+  const greenToBlueColors = [
     '#013220', // Deep forest green
     '#024d26', // Dark jade
     '#036b34', // Rich dark green
@@ -180,9 +103,6 @@ const Dashboard = () => {
     '#083358', // Midnight teal-blue
     '#062743', // Navy bluish green
   ];
-
-  const chartGradients = mixedTheme;
-  const greenToBlueColors = G2BColors4;
 
   useEffect(() => {
     loadDashboardData();
@@ -260,27 +180,9 @@ const Dashboard = () => {
   const fetchMetrics = async () => {
     try {
       // Get total reviewers (count distinct users)
-      const { data: reviewersData } = await supabase
-        .from('ratings')
-        .select('user_id');
-
-      const uniqueReviewers = new Set(
-        reviewersData?.map((item) => item.user_id) || [],
-      );
-      const totalReviewers = uniqueReviewers.size;
-
-      // Get average rating
-      const { data: avgData } = await supabase
-        .from('ratings')
-        .select('star_rating');
-
-      const averageRating =
-        avgData && avgData.length > 0
-          ? (
-              avgData.reduce((sum, item) => sum + item.star_rating, 0) /
-              avgData.length
-            ).toFixed(2)
-          : 0;
+      const { data: statsData, error } = await supabase.rpc('get_rating_stats');
+      const totalReviewers = statsData?.total_reviewers || 0;
+      const averageRating = Number((statsData?.average_rating || 0).toFixed(2));
 
       // Get trending data
       const { data: trendingData } = await supabase
@@ -315,8 +217,7 @@ const Dashboard = () => {
       localStorage.setItem('dashboardData', JSON.stringify(newDashboardData));
       localStorage.setItem('cacheTime', Date.now().toString());
     } catch (error) {
-      console.error('Error fetching metrics:', error);
-      throw error;
+      console.log('Error fetching metrics:', error);
     }
   };
 
@@ -327,8 +228,6 @@ const Dashboard = () => {
         .from('ratings_summary')
         .select('location, model_number, rating_count')
         .order('rating_count', { ascending: false });
-
-      console.log('Location Data:', locationData);
 
       // Transform data for Hall Heat Map - group by location and sum rating_count
       const transformedTreemapData = transformHallHeatMapData(
@@ -349,16 +248,21 @@ const Dashboard = () => {
         .order('rating_count', { ascending: false })
         .limit(10);
 
-      // Get hourly reviewers (last 24 hours)
-      const twentyFourHoursAgo = new Date();
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+      // Get hourly reviewers data from the new function
+      const { data: hourlyData, error: hourlyError } = await supabase.rpc(
+        'get_hourly_ratings_data',
+        {
+          p_start_date: new Date().toISOString().split('T')[0],
+          p_end_date: new Date().toISOString().split('T')[0],
+          p_timezone_name: 'Asia/Kolkata',
+        },
+      );
 
-      const { data: hourlyData } = await supabase
-        .from('ratings')
-        .select('created_at')
-        .gte('created_at', twentyFourHoursAgo.toISOString());
+      if (hourlyError) {
+        console.error('Error fetching hourly data:', hourlyError);
+      }
 
-      const hourlyReviewers = processHourlyData(hourlyData || []);
+      const hourlyReviewers = processHourlyDataFromFunction(hourlyData || []);
 
       const newChartsData = {
         treemap: transformedTreemapData,
@@ -373,6 +277,53 @@ const Dashboard = () => {
       console.error('Error fetching charts data:', error);
       throw error;
     }
+  };
+
+  // New function to process hourly data from the database function
+  const processHourlyDataFromFunction = (hourlyData) => {
+    if (!hourlyData || hourlyData.length === 0) {
+      // Return empty structure if no data
+      return Array.from({ length: 14 }, (_, i) => {
+        const hour = i + 9;
+        return {
+          hour:
+            hour === 9
+              ? '9AM (includes <9AM)'
+              : hour === 22
+              ? '10PM (includes >10PM)'
+              : `${hour <= 12 ? hour : hour - 12}${hour < 12 ? 'AM' : 'PM'}`,
+          count: 0,
+          cumulative: 0,
+          unique_users: 0,
+        };
+      });
+    }
+
+    // Map the function response to the expected chart format
+    return hourlyData.map((item) => ({
+      hour: item.hour_display,
+      count: Number(item.hourly_count),
+      cumulative: Number(item.cumulative_count),
+      unique_users: Number(item.unique_users),
+    }));
+  };
+
+  const getYAxisDomainForRatingModels = (data) => {
+    if (!data || data.length === 0) return [0, 5];
+
+    const values = data.map((item) => item.bayesian_score);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+
+    // Add 10% padding to the range
+    const range = maxValue - minValue;
+    let padding = range * 0.1;
+    padding = Math.max(padding, 0.05); // Ensure a minimum padding of 0.5
+
+    return [
+      Math.max(0, minValue - padding), // Ensure it doesn't go below 0
+      Math.min(5, maxValue + padding), // Ensure it doesn't go above 5 if that's your max
+    ];
   };
 
   const transformHallHeatMapData = (data) => {
@@ -438,53 +389,6 @@ const Dashboard = () => {
     return locations;
   };
 
-  const processHourlyData = (data) => {
-    // Create hours array from 9AM to 11PM (9 to 23)
-    const hours = Array.from({ length: 15 }, (_, i) => {
-      const hour = i + 9; // Start from 9AM
-      const hourStr = hour.toString().padStart(2, '0');
-      return {
-        hour: `${hourStr}:00`,
-        count: 0,
-        cumulative: 0,
-      };
-    });
-
-    let cumulativeCount = 0;
-
-    data.forEach((item) => {
-      const hour = new Date(item.created_at).getHours();
-      let targetHour = hour;
-
-      // Anything before 9AM counts as 9AM, anything after 11PM counts as 11PM
-      if (hour < 9) targetHour = 9;
-      if (hour > 23) targetHour = 23;
-
-      const index = targetHour - 9; // Convert to array index (9AM = 0, 10AM = 1, ..., 11PM = 14)
-      if (index >= 0 && index < hours.length) {
-        hours[index].count++;
-      }
-    });
-
-    // Calculate cumulative count
-    hours.forEach((hour) => {
-      cumulativeCount += hour.count;
-      hour.cumulative = cumulativeCount;
-    });
-
-    return hours;
-  };
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-    resetCarousel();
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    resetCarousel();
-  };
-
   const goToSlide = (index) => {
     setCurrentSlide(index);
     resetCarousel();
@@ -528,11 +432,7 @@ const Dashboard = () => {
     return stars;
   };
 
-  // Fixed Custom Treemap Content
-
-  // Custom tooltip for treemap
-  // Fixed Custom Treemap Content
-  // Fixed Custom Treemap Content
+  // Custom Treemap Content
   const CustomTreemapContent = (props) => {
     const { root, depth, x, y, width, height, index, name, rating_count } =
       props;
@@ -554,7 +454,7 @@ const Dashboard = () => {
           height={height}
           style={{
             fill:
-              depth < 2
+              depth < 3
                 ? greenToBlueColors[colorIndex]
                 : 'rgba(183, 174, 6, 0)',
             stroke: '#fff',
@@ -562,7 +462,7 @@ const Dashboard = () => {
             strokeOpacity: 0.7,
           }}
         />
-        {depth === 1 ? (
+        {depth === 2 ? (
           <text
             x={x + width / 2}
             y={y + height / 2 + 7}
@@ -577,6 +477,7 @@ const Dashboard = () => {
       </g>
     );
   };
+
   // Custom tooltip for treemap
   const CustomTreemapTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -594,7 +495,7 @@ const Dashboard = () => {
     return null;
   };
 
-  // Custom tooltip for hourly chart
+  // Enhanced Custom tooltip for hourly chart
   const CustomHourlyTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -602,7 +503,7 @@ const Dashboard = () => {
           <p className="font-semibold">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
+              {entry.name}: {entry.value?.toLocaleString()}
             </p>
           ))}
         </div>
@@ -788,17 +689,12 @@ const Dashboard = () => {
                     content={<CustomTreemapContent />}
                   >
                     <Tooltip content={<CustomTreemapTooltip />} />
-                    {/* REMOVE THIS ENTIRE BLOCK:
-        {chartsData.treemap.map((entry, index) => (
-          <Cell key={`cell-${index}`} fill={entry.color} />
-        ))}
-        */}
                   </Treemap>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Slide 2: Top 10 Highly Rated Models - Fixed YAxis range */}
+            {/* Slide 2: Top 10 Highly Rated Models */}
             <div
               className={`absolute inset-0 transition-opacity duration-500 ${
                 currentSlide === 1 ? 'opacity-100' : 'opacity-0'
@@ -821,7 +717,11 @@ const Dashboard = () => {
                       height={60}
                       tick={{ fontSize: 12 }}
                     />
-                    <YAxis domain={[2, 5]} />
+                    <YAxis
+                      domain={getYAxisDomainForRatingModels(
+                        chartsData.topModels,
+                      )}
+                    />
                     <Tooltip
                       formatter={(value, name) => [
                         value.toFixed(2),
@@ -852,7 +752,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Slide 3: Top 10 Highly Visited Models - Adjusted bottom margin */}
+            {/* Slide 3: Top 10 Highly Visited Models */}
             <div
               className={`absolute inset-0 transition-opacity duration-500 ${
                 currentSlide === 2 ? 'opacity-100' : 'opacity-0'
@@ -904,20 +804,24 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Slide 4: Hourly Reviewers Count - Updated colors and time range */}
+            {/* Slide 4: Hourly Reviewers Count - OPTIMIZED VERSION */}
             <div
               className={`absolute inset-0 transition-opacity duration-500 ${
                 currentSlide === 3 ? 'opacity-100' : 'opacity-0'
               }`}
             >
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                Hourly Reviewers Count (9AM - 11PM)
+                Hourly Reviewers Count (9AM - 10PM)
               </h3>
               <div className="h-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartsData.hourlyReviewers}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="hour" />
+                    <XAxis
+                      dataKey="hour"
+                      tick={{ fontSize: 12 }}
+                      interval={0}
+                    />
                     <YAxis yAxisId="left" />
                     <YAxis yAxisId="right" orientation="right" />
                     <Tooltip content={<CustomHourlyTooltip />} />
@@ -926,17 +830,27 @@ const Dashboard = () => {
                       yAxisId="left"
                       dataKey="count"
                       name="Hourly Count"
-                      fill="#FF6B6B" // Red color for bars
+                      fill="#FF6B6B"
                       barSize={20}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="unique_users"
+                      name="Unique Users"
+                      stroke="#4ECDC4"
+                      strokeWidth={3}
+                      dot={{ fill: '#4ECDC4', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: '#4ECDC4' }}
                     />
                     <Area
                       yAxisId="right"
                       type="monotone"
                       dataKey="cumulative"
                       name="Cumulative Count"
-                      stroke="#4ECDC4" // Teal color for area
-                      fill="#4ECDC4"
-                      fillOpacity={0.6}
+                      stroke="#8884d8"
+                      fill="#8884d8"
+                      fillOpacity={0.3}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>

@@ -6,7 +6,7 @@ import UserRegister from './components/UserRegister';
 import ModelsView from './components/ModelsView';
 import LoginModal from './components/LoginModal';
 import ResetPasswordModal from './components/ResetPasswordModal';
-import { Star, TrendingUp, Menu, MicVocal } from 'lucide-react';
+import { Star, TrendingUp, Menu, MicVocal, Play, Squircle } from 'lucide-react';
 import { visitTrack } from './lib/visitTrack';
 import { getModels } from './lib/modelsApi';
 import { generateUserID, supabase } from './lib/supabaseClient';
@@ -240,10 +240,10 @@ const App = () => {
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             <a
               href="/models"
-              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+              className="bg-gradient-to-br from-emerald-100 via-emerald-200 to-emerald-400  rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
             >
-              <Star className="text-emerald-600 mb-4" size={48} />
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              <Star className="text-emerald-900 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-emerald-800 mb-2">
                 View Models
               </h2>
               <p className="text-gray-600">
@@ -253,15 +253,15 @@ const App = () => {
 
             <a
               href="/feedback"
-              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+              className="bg-gradient-to-br from-teal-100 via-teal-200 to-teal-400  rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
               onClick={(e) => {
                 e.preventDefault();
                 setCurrentView('feedback');
                 window.history.pushState({}, '', '/feedback');
               }}
             >
-              <MicVocal className="text-red-600 mb-4" size={48} />
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              <MicVocal className="text-teal-900 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-teal-800 mb-2">
                 Feedback
               </h2>
               <p className="text-gray-600">
@@ -271,10 +271,10 @@ const App = () => {
 
             <a
               href="/dashboard"
-              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+              className="bg-gradient-to-br from-cyan-100 via-cyan-200 to-cyan-400  rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
             >
-              <TrendingUp className="text-blue-600 mb-4" size={48} />
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              <TrendingUp className="text-cyan-900 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-cyan-800 mb-2">
                 Live Dashboard
               </h2>
               <p className="text-gray-600">
@@ -284,16 +284,42 @@ const App = () => {
 
             <button
               onClick={handleAdminClick}
-              className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1 text-left cursor-pointer"
+              className="bg-gradient-to-br from-violet-100 via-violet-200 to-violet-400 rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1 text-left cursor-pointer"
             >
-              <Menu className="text-purple-600 mb-4" size={48} />
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              <Menu className="text-violet-900 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-violet-800 mb-2">
                 Admin Panel
               </h2>
               <p className="text-gray-600">
                 Manage models, volunteers, and export data
               </p>
             </button>
+            <a
+              href="https://www.instagram.com/theprophetofmercyfoundation/"
+              className="bg-gradient-to-br from-fuchsia-100 via-fuchsia-200 to-fuchsia-400 rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              <Squircle className="text-fuchsia-900 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-fuchsia-800 mb-2">
+                Instagram
+              </h2>
+              <p className="text-gray-600">
+                Follow us on Instagram for the latest updates
+              </p>
+            </a>
+            <a
+              href="https://www.youtube.com/@tpmfbanglore"
+              className="bg-gradient-to-br from-rose-100 via-rose-200 to-rose-400 rounded-lg shadow-lg p-8 hover:shadow-xl transition transform hover:-translate-y-1"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              <Play className="text-rose-900 mb-4" size={48} />
+              <h2 className="text-2xl font-bold text-rose-800 mb-2">YouTube</h2>
+              <p className="text-gray-600">
+                Visit our YouTube channel for more content
+              </p>
+            </a>
           </div>
 
           {/* Rest of your home page content */}
